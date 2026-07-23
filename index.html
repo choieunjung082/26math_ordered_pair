@@ -71,7 +71,6 @@ footer{text-align:center;color:var(--muted);margin:18px 0}.stone{transform-box:f
     <p>좌표평면에서는 모든 위치를 두 수의 순서쌍으로 나타낼 수 있습니다.</p>
     <p>가로 위치인 <b>x좌표를 먼저</b> 쓰고, 세로 위치인 <b>y좌표를 나중</b>에 씁니다.</p>
     <p>숫AI돌 또는 친구와 좌표로 위치를 주고받으며 오목 대결을 해보세요.</p>
-    <p><span class="bank-badge" id="bankInfo">적응형 문제은행 준비 중</span></p>
   </div>
   <div class="mode-tabs" role="group" aria-label="대결 방식 선택">
     <button type="button" id="aiModeBtn" class="mode-btn active">🤖 숫AI돌과 대결</button>
@@ -212,6 +211,7 @@ footer{text-align:center;color:var(--muted);margin:18px 0}.stone{transform-box:f
 <footer>[9수02-05] 순서쌍과 좌표를 이해하고, 그 편리함을 인식할 수 있다.</footer>
 </div>
 
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s), NS="http://www.w3.org/2000/svg", AI_NAME="숫AI돌";
@@ -246,8 +246,7 @@ function coordType({x,y}){if(x===0&&y===0)return"origin";if(y===0)return"xAxis";
 function quadrantName(x,y){if(x===0&&y===0)return"원점";if(y===0)return"x축 위";if(x===0)return"y축 위";if(x>0&&y>0)return"제1사분면";if(x<0&&y>0)return"제2사분면";if(x<0&&y<0)return"제3사분면";return"제4사분면"}
 
 function buildQuestionBank(){
-  // [9수02-05] 순서쌍과 좌표 문항만 구성합니다.
-  // [9수02-06] 상황을 그래프로 나타내거나 그래프를 해석하는 문항은 포함하지 않습니다.
+  // 순서쌍과 좌표에 관한 문항만 구성합니다.
   const bank=[];let id=0;const add=q=>bank.push({id:`Q${++id}`,standard:"9수02-05",level:1,...q});
   const coords=[];for(let x=-7;x<=7;x++)for(let y=-7;y<=7;y++)coords.push({x,y,level:Math.max(Math.abs(x),Math.abs(y))<=3?1:Math.max(Math.abs(x),Math.abs(y))<=5?2:3});
   // 75개: 좌표평면 점 읽기
@@ -283,9 +282,23 @@ function buildQuestionBank(){
   for(let i=0;i<8;i++)add({level:1,type:"utility",skills:["utility"],format:"choice",answer:"순서쌍으로 나타내는 방법",prompt:`중앙에서 오른쪽으로 ${i%4+1}칸, 위쪽으로 ${i%3+1}칸인 위치를 빠르고 정확하게 전달하는 데 더 편리한 방법은 무엇인가요?`,choices:["방향을 문장으로 설명하는 방법","순서쌍으로 나타내는 방법"],hint:"두 수만으로 가로와 세로 위치를 동시에 나타낼 수 있는 방법을 생각하세요."});
   return bank;
 }
-QUESTION_BANK=buildQuestionBank();
-$("#bankInfo").textContent=`약 ${QUESTION_BANK.length}문항 · [9수02-05] 전용 · [9수02-06] 그래프 문항 제외 · 중복 없는 적응형 출제`;
-
+const EXCLUDED_QUESTION_TYPES=new Set([
+  "graph","graphRead","graphInterpret","graphSituation",
+  "table","tableRead","tableRelation",
+  "equation","relationEquation",
+  "proportional","directProportion","inverseProportion","inverseProportional"
+]);
+const EXCLUDED_QUESTION_TEXT=/(?:\[?9수02-(?:06|07)\]?|정비례|반비례|비례 관계|비례상수|관계식|y\s*=\s*[a-z0-9+-]*x|x\s*y\s*=|xy\s*=|표로 나타|표에서 찾|그래프로 나타|그래프를 해석|그래프의 모양)/i;
+function isCoordinateStandardQuestion(q){
+  const questionText=[
+    q.standard,q.type,q.prompt,q.hint,q.answer,
+    ...(Array.isArray(q.choices)?q.choices:[])
+  ].filter(v=>v!==undefined&&v!==null).join(" ");
+  return q.standard==="9수02-05"
+    && !EXCLUDED_QUESTION_TYPES.has(q.type)
+    && !EXCLUDED_QUESTION_TEXT.test(questionText);
+}
+QUESTION_BANK=buildQuestionBank().filter(isCoordinateStandardQuestion);
 function activeBank(){const r=difficultyRank();return QUESTION_BANK.filter(q=>q.standard==="9수02-05"&&q.level<=r)}
 function weakness(skill){const d=S.skills[skill];return 1+d.wrong*4-Math.min(d.correct,6)*.35}
 function plannedSkills(){const plan=[["read","x","y"],["quadrant","axis"],["plot","order"],["read","sign"],["numberline"],["x","y"],["read","axis"],["reason","quadrant"],["axis","reason"],["read","order","sign"]];return plan[S.questionNo]||["read"]}
@@ -493,6 +506,129 @@ const F={
   pendingRead:null,readAttempt:0,readTime:15,readClock:null,score:0,firstCorrect:0,retryCorrect:0,wrong:0,
   records:[],noticeTimer:null,lastMove:null
 };
+
+// ----- 친구 대전 연결 계층: 로컬 서버 우선, 정적 웹에서는 PeerJS P2P 자동 대체 -----
+Object.assign(F,{transport:"",peer:null,conn:null,hostState:null,pendingRequests:new Map(),requestSeq:0,peerJoined:false,peerConnectResolve:null,peerConnectReject:null,closing:false});
+const PEER_ROOM_PREFIX="coordinate-omok-9s02-05-room-";
+const peerRoomId=code=>PEER_ROOM_PREFIX+code;
+function setFriendConnection(ok,text,transport){
+  const dot=$("#friendConnDot"),label=$("#friendConnection"),method=$("#friendTransport");
+  if(dot)dot.className=`connection-dot ${ok===true?"ok":ok===false?"bad":""}`;
+  if(label)label.textContent=text;
+  if(method&&transport)method.textContent=transport;
+}
+function enterFriendScreen(){
+  $("#startScreen").classList.add("hidden");$("#friendScreen").classList.remove("hidden");$("#friendRoomCode").textContent=F.room;
+  drawFriendBoard();renderFriendPlayers();updateFriendUI();
+}
+async function detectLocalFriendServer(){
+  if(location.protocol==="file:")return false;
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),1200);
+  try{
+    const res=await fetch("/api/health",{cache:"no-store",signal:controller.signal});
+    if(!res.ok)return false;const d=await res.json();return d&&d.ok===true;
+  }catch{return false}finally{clearTimeout(timer)}
+}
+function peerErrorText(err){
+  const type=err?.type||"";
+  if(type==="unavailable-id")return"이미 사용 중인 방 코드입니다. 다른 숫자 4자리를 사용하세요.";
+  if(type==="peer-unavailable")return"해당 코드의 방을 찾을 수 없습니다. 방을 만든 친구가 먼저 접속했는지 확인하세요.";
+  if(type==="network"||type==="server-error"||type==="socket-error")return"웹 연결 서버에 접속하지 못했습니다. 인터넷 연결이나 학교 네트워크 차단 여부를 확인하세요.";
+  if(type==="browser-incompatible")return"이 브라우저는 친구 대전 연결을 지원하지 않습니다. 최신 Chrome 또는 Edge를 사용하세요.";
+  return err?.message||"친구 연결 중 오류가 발생했습니다.";
+}
+function peerPublicPlayers(){return (F.hostState?.players||[]).map(p=>({id:p.id,name:p.name,color:p.color||null}))}
+function peerSendRaw(data){if(F.conn?.open)F.conn.send(data)}
+function peerBroadcastEvent(event){
+  if(F.role==="host")handleFriendEvent(event);
+  peerSendRaw({kind:"event",event});
+}
+function peerWin(board,x,y,pid){
+  for(const[dx,dy]of[[1,0],[0,1],[1,1],[1,-1]]){let n=1;for(const s of[-1,1]){let nx=x+dx*s,ny=y+dy*s;while(board.get(`${nx},${ny}`)===pid){n++;nx+=dx*s;ny+=dy*s}}if(n>=5)return true}return false
+}
+function peerRollDice(){
+  const h=F.hostState;let a,b;do{a=1+Math.floor(Math.random()*6);b=1+Math.floor(Math.random()*6)}while(a===b);
+  const winner=a>b?h.players[0]:h.players[1];h.diceWinner=winner.id;
+  peerBroadcastEvent({type:"dice",rolls:[a,b],names:h.players.map(p=>p.name),players:peerPublicPlayers(),winnerId:winner.id,winnerName:winner.name});
+}
+function peerProcessCommand(playerId,ev){
+  const h=F.hostState;if(!h)throw new Error("대결방 정보가 없습니다.");const p=h.players.find(x=>x.id===playerId);if(!p)throw new Error("참가자 정보가 올바르지 않습니다.");
+  if(ev.type==="choice"){
+    if(playerId!==h.diceWinner)throw new Error("주사위 승자만 선택할 수 있습니다.");if(h.started)throw new Error("이미 대결이 시작되었습니다.");if(h.players.length!==2)throw new Error("두 명이 모두 들어와야 합니다.");
+    const other=h.players.find(x=>x.id!==playerId),winnerColor=ev.winnerColor==="white"?"white":"black";p.color=winnerColor;other.color=winnerColor==="black"?"white":"black";
+    h.turnId=h.players.some(x=>x.id===ev.firstId)?ev.firstId:playerId;h.board=new Map();h.started=true;const first=h.players.find(x=>x.id===h.turnId);
+    peerBroadcastEvent({type:"gameStart",turnId:h.turnId,colors:Object.fromEntries(h.players.map(x=>[x.id,x.color])),players:peerPublicPlayers(),firstName:first.name});return {ok:true};
+  }
+  if(ev.type==="move"){
+    if(!h.started)throw new Error("아직 대결이 시작되지 않았습니다.");if(h.turnId!==playerId)throw new Error("현재는 상대방의 차례입니다.");
+    const lim=h.difficulty==="basic"?3:h.difficulty==="challenge"?7:5,x=Number(ev.x),y=Number(ev.y);if(!Number.isInteger(x)||!Number.isInteger(y)||x<-lim||x>lim||y<-lim||y>lim)throw new Error("좌표 범위를 확인하세요.");if(h.board.has(`${x},${y}`))throw new Error("이미 돌이 있는 좌표입니다.");
+    h.board.set(`${x},${y}`,playerId);const won=peerWin(h.board,x,y,playerId),other=h.players.find(q=>q.id!==playerId);if(!won)h.turnId=other.id;
+    peerBroadcastEvent({type:"move",x,y,playerId,playerName:p.name,nextTurnId:won?null:other.id,gameOver:won});
+    if(won){h.started=false;peerBroadcastEvent({type:"gameOver",reason:"omok",winnerName:p.name,winnerId:playerId})}return {ok:true};
+  }
+  if(ev.type==="timeoutLoss"){
+    if(!h.started||h.turnId!==playerId)throw new Error("현재 차례가 아닙니다.");const winner=h.players.find(x=>x.id!==playerId);h.started=false;peerBroadcastEvent({type:"gameOver",reason:"timeout",loserName:p.name,winnerName:winner.name,winnerId:winner.id});return {ok:true};
+  }
+  if(ev.type==="leave"){
+    h.started=false;peerBroadcastEvent({type:"peerLeft",name:p.name});try{F.conn?.close()}catch{}return {ok:true};
+  }
+  throw new Error("지원하지 않는 요청입니다.");
+}
+function peerAttachConnection(conn,isHost){
+  F.conn=conn;
+  conn.on("data",data=>{
+    if(!data||typeof data!=="object")return;
+    if(isHost&&data.kind==="joinRequest"){
+      const h=F.hostState;
+      if(h.players.length>=2){conn.send({kind:"joinError",message:"이미 두 명이 참가한 방입니다."});setTimeout(()=>conn.close(),300);return}
+      if(h.started){conn.send({kind:"joinError",message:"이미 대결이 시작된 방입니다."});setTimeout(()=>conn.close(),300);return}
+      const guest={id:conn.peer,name:String(data.name||"학생").trim().slice(0,20)||"학생",color:null};h.players.push(guest);
+      conn.send({kind:"joined",payload:{code:F.room,playerId:guest.id,role:"guest",difficulty:h.difficulty,players:peerPublicPlayers()}});
+      peerBroadcastEvent({type:"players",players:peerPublicPlayers()});peerRollDice();return;
+    }
+    if(isHost&&data.kind==="command"){
+      try{const result=peerProcessCommand(conn.peer,data.event||{});conn.send({kind:"commandResult",requestId:data.requestId,ok:true,result})}
+      catch(e){conn.send({kind:"commandResult",requestId:data.requestId,ok:false,error:e.message})}return;
+    }
+    if(!isHost&&data.kind==="joined"){
+      const d=data.payload;F.room=d.code;F.playerId=d.playerId;F.role=d.role;F.players=d.players||[];F.difficulty=d.difficulty||F.difficulty;[F.min,F.max]=rangeSettings(F.difficulty);F.peerJoined=true;if(F.peerConnectResolve){F.peerConnectResolve();F.peerConnectResolve=null;F.peerConnectReject=null}
+      enterFriendScreen();setFriendConnection(true,"친구와 연결됨","웹 P2P");friendLog(`방 코드 ${F.room}에 연결했습니다.`);return;
+    }
+    if(!isHost&&data.kind==="joinError"){const e=new Error(data.message||"방에 참가하지 못했습니다.");if(F.peerConnectReject){F.peerConnectReject(e);F.peerConnectResolve=null;F.peerConnectReject=null}else alert(e.message);try{F.peer?.destroy()}catch{}return}
+    if(!isHost&&data.kind==="event"){handleFriendEvent(data.event);return}
+    if(!isHost&&data.kind==="commandResult"){
+      const pending=F.pendingRequests.get(data.requestId);if(!pending)return;F.pendingRequests.delete(data.requestId);clearTimeout(pending.timer);data.ok?pending.resolve(data.result):pending.reject(new Error(data.error||"요청 처리 실패"));
+    }
+  });
+  conn.on("close",()=>{if(F.closing)return;setFriendConnection(false,"친구 연결이 종료됨",F.transport==="peer"?"웹 P2P":"로컬 서버");if(F.started)handleFriendEvent({type:"peerLeft",name:"친구"})});
+  conn.on("error",err=>{setFriendConnection(false,"연결 오류",F.transport==="peer"?"웹 P2P":"로컬 서버");friendLog(peerErrorText(err))});
+}
+async function startFriendPeer(action,code){
+  if(typeof Peer!=="function")throw new Error("웹 연결 모듈을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침하세요.");
+  F.transport="peer";setFriendConnection(null,"웹 연결 준비 중","웹 P2P");
+  return new Promise((resolve,reject)=>{
+    let settled=false;const fail=e=>{if(settled)return;settled=true;try{F.peer?.destroy()}catch{}reject(new Error(peerErrorText(e)))};
+    if(action==="create"){
+      F.peer=new Peer(peerRoomId(code),{debug:0});
+      F.peer.on("open",id=>{if(settled)return;settled=true;F.room=code;F.playerId=id;F.role="host";F.players=[{id,name:F.name,color:null}];F.hostState={players:[{id,name:F.name,color:null}],board:new Map(),turnId:null,diceWinner:null,started:false,difficulty:F.difficulty};
+        enterFriendScreen();setFriendConnection(true,"방 생성 완료 · 친구 대기 중","웹 P2P");friendLog(`방 코드 ${code}를 만들었습니다. 친구에게 알려주세요.`);resolve();});
+      F.peer.on("connection",conn=>{if(F.conn?.open){conn.on("open",()=>{conn.send({kind:"joinError",message:"이미 두 명이 참가한 방입니다."});conn.close()});return}peerAttachConnection(conn,true)});
+      F.peer.on("error",fail);
+    }else{
+      F.peerConnectResolve=resolve;F.peerConnectReject=reject;F.peer=new Peer(undefined,{debug:0});
+      F.peer.on("open",()=>{const conn=F.peer.connect(peerRoomId(code),{reliable:true,metadata:{app:"coordinate-omok"}});peerAttachConnection(conn,false);conn.on("open",()=>{F.room=code;conn.send({kind:"joinRequest",name:F.name,difficulty:F.difficulty});setFriendConnection(null,"방 참가 확인 중","웹 P2P")});setTimeout(()=>{if(!F.peerJoined)fail({type:"peer-unavailable",message:"연결 시간 초과"})},8000)});
+      F.peer.on("error",fail);
+    }
+  })
+}
+async function friendSendEvent(event){
+  if(F.transport==="local")return friendApi("/api/send",{code:F.room,playerId:F.playerId,event});
+  if(F.transport!=="peer")throw new Error("친구 연결이 준비되지 않았습니다.");
+  if(F.role==="host")return peerProcessCommand(F.playerId,event);
+  if(!F.conn?.open)throw new Error("친구와의 연결이 끊어졌습니다.");
+  const requestId=`r${Date.now()}_${++F.requestSeq}`;return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{F.pendingRequests.delete(requestId);reject(new Error("친구 응답 시간이 초과되었습니다."))},5000);F.pendingRequests.set(requestId,{resolve,reject,timer});F.conn.send({kind:"command",requestId,event})})
+}
+
 function setGameMode(mode){
   $("#gameMode").value=mode;$("#aiModeBtn").classList.toggle("active",mode==="ai");$("#friendModeBtn").classList.toggle("active",mode==="friend");
   $("#friendRoomPanel").classList.toggle("hidden",mode!=="friend");
@@ -504,23 +640,25 @@ $("#roomAction").addEventListener("change",()=>setGameMode("friend"));
 $("#roomCodeInput").addEventListener("input",e=>e.target.value=e.target.value.replace(/\D/g,"").slice(0,4));
 
 async function friendApi(path,data={}){
-  const res=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  let res;try{res=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})}catch{throw new Error("로컬 대결 서버에 접속하지 못했습니다.")}
+  const type=res.headers.get("content-type")||"";if(!type.includes("application/json"))throw new Error("현재 웹주소에는 친구 대전 서버가 없습니다.");
   const payload=await res.json().catch(()=>({}));if(!res.ok)throw new Error(payload.error||"대결 서버에 연결할 수 없습니다.");return payload;
 }
 async function startFriendMode(){
   F.name=$("#studentName").value.trim()||"학생";F.difficulty=$("#difficulty").value;[F.min,F.max]=rangeSettings(F.difficulty);
-  const action=$("#roomAction").value,code=$("#roomCodeInput").value.trim();
-  if(!/^\d{4}$/.test(code)){alert("사용할 4자리 숫자 방 코드를 입력하세요.");return}
-  const payload={name:F.name,difficulty:F.difficulty,code};
+  const action=$("#roomAction").value,code=$("#roomCodeInput").value.trim();if(!/^\d{4}$/.test(code)){alert("사용할 4자리 숫자 방 코드를 입력하세요.");return}
+  $("#startBtn").disabled=true;$("#startBtn").textContent="연결 확인 중…";
   try{
-    const data=await friendApi(action==="create"?"/api/create":"/api/join",payload);
-    F.room=data.code;F.playerId=data.playerId;F.role=data.role;F.players=data.players||[];F.difficulty=data.difficulty||F.difficulty;[F.min,F.max]=rangeSettings(F.difficulty);
-    $("#startScreen").classList.add("hidden");$("#friendScreen").classList.remove("hidden");$("#friendRoomCode").textContent=F.room;
-    friendLog(`방 코드 ${F.room}에 연결했습니다.`);drawFriendBoard();renderFriendPlayers();updateFriendUI();startFriendPolling();
-  }catch(e){alert(e.message+"\n\n친구 대전은 index.html을 서버에서 실행해야 합니다. 함께 제공된 server.js를 실행하거나 웹 서버에 배포하세요.")}
+    if(await detectLocalFriendServer()){
+      F.transport="local";const data=await friendApi(action==="create"?"/api/create":"/api/join",{name:F.name,difficulty:F.difficulty,code});
+      F.room=data.code;F.playerId=data.playerId;F.role=data.role;F.players=data.players||[];F.difficulty=data.difficulty||F.difficulty;[F.min,F.max]=rangeSettings(F.difficulty);
+      enterFriendScreen();setFriendConnection(true,action==="create"?"방 생성 완료 · 친구 대기 중":"친구와 연결됨","같은 와이파이 로컬 서버");friendLog(`방 코드 ${F.room}에 연결했습니다.`);startFriendPolling();
+    }else await startFriendPeer(action,code);
+  }catch(e){alert(e.message+"\n\n방을 만든 학생과 참가하는 학생이 같은 웹주소에 접속했는지 확인하세요.")}
+  finally{$("#startBtn").disabled=false;setGameMode("friend")}
 }
 function startFriendPolling(){
-  clearInterval(F.pollTimer);F.pollTimer=setInterval(async()=>{try{const d=await friendApi("/api/poll",{code:F.room,playerId:F.playerId});$("#friendConnDot").className="connection-dot ok";$("#friendConnection").textContent="연결됨";(d.events||[]).forEach(handleFriendEvent)}catch(e){$("#friendConnDot").className="connection-dot bad";$("#friendConnection").textContent="연결 재시도 중"}},550)
+  if(F.transport!=="local")return;clearInterval(F.pollTimer);F.pollTimer=setInterval(async()=>{try{const d=await friendApi("/api/poll",{code:F.room,playerId:F.playerId});F.players=d.players||F.players;setFriendConnection(true,"연결됨","같은 와이파이 로컬 서버");renderFriendPlayers();(d.events||[]).forEach(handleFriendEvent)}catch(e){setFriendConnection(false,"연결 재시도 중","같은 와이파이 로컬 서버")}},550)
 }
 function handleFriendEvent(ev){
   if(ev.type==="players"){F.players=ev.players;renderFriendPlayers();friendLog(`${ev.players.map(p=>p.name).join(" · ")} 연결`)}
@@ -548,7 +686,7 @@ function handleFriendEvent(ev){
 function showFriendChoice(){
   showModal(`<h2>주사위 승리!</h2><p>${escapeHTML(F.name)}님이 선공과 돌 색을 결정합니다.</p><div class="form-grid"><div class="field"><label>먼저 시작할 사람</label><select id="friendFirstChoice">${F.players.map(p=>`<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("")}</select></div><div class="field"><label>내 돌 색</label><select id="friendColorChoice"><option value="black">검은색</option><option value="white">흰색</option></select></div></div><button class="primary" style="margin-top:13px" onclick="sendFriendChoice()">선택 완료</button>`)
 }
-window.sendFriendChoice=async()=>{try{await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"choice",firstId:$("#friendFirstChoice").value,winnerColor:$("#friendColorChoice").value}});hideModal()}catch(e){alert(e.message)}};
+window.sendFriendChoice=async()=>{try{await friendSendEvent({type:"choice",firstId:$("#friendFirstChoice").value,winnerColor:$("#friendColorChoice").value});hideModal()}catch(e){alert(e.message)}};
 function renderFriendPlayers(){$("#friendPlayers").innerHTML=F.players.map(p=>`<div class="friend-player ${p.id===F.playerId?"me":""}"><b>${escapeHTML(p.name)}${p.id===F.playerId?" (나)":""}</b><span>${p.color?(p.color==="black"?"⚫ 검은 돌":"⚪ 흰 돌"):"대기"}</span></div>`).join("")}
 function friendPlayer(pid){return F.players.find(p=>p.id===pid)}
 function friendColor(pid){return friendPlayer(pid)?.color||"black"}
@@ -575,7 +713,7 @@ function renderFriendMove(){
 }
 async function submitFriendMove(){
   const xs=$("#friendMoveX").value.trim(),ys=$("#friendMoveY").value.trim();if(!xs||!ys)return friendTaskStatus("x좌표와 y좌표를 모두 입력하세요. 순서쌍은 두 수로 나타냅니다.","bad");const x=Number(xs),y=Number(ys);if(!Number.isInteger(x)||!Number.isInteger(y))return friendTaskStatus("좌표평면의 눈금에 해당하는 정수를 입력하세요.","bad");if(x<F.min||x>F.max||y<F.min||y>F.max)return friendTaskStatus("현재 좌표평면의 범위를 확인하세요.","bad");if(F.board.has(key(x,y)))return friendTaskStatus("이 좌표에는 이미 돌이 있습니다. 다른 좌표를 선택하세요.","bad");
-  try{stopFriendMoveClock();await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"move",x,y}});friendTaskStatus(`(${x}, ${y})를 사용하여 위치를 정확하게 전달했습니다.`,"ok")}catch(e){friendTaskStatus(e.message,"bad");startFriendMoveClock()}
+  try{stopFriendMoveClock();await friendSendEvent({type:"move",x,y});friendTaskStatus(`(${x}, ${y})를 사용하여 위치를 정확하게 전달했습니다.`,"ok")}catch(e){friendTaskStatus(e.message,"bad");startFriendMoveClock()}
 }
 function renderFriendReadMission(){
   const p=F.pendingRead;if(!p)return beginFriendTurn();$("#friendTaskCard").className="card friend-task turn-mission";$("#friendTaskArea").innerHTML=`<div class="problem-number">친구 돌 좌표 읽기</div><h2>${escapeHTML(p.playerName)}님이 방금 놓은 돌의 위치를 순서쌍으로 나타내세요.</h2><div class="coord-inputs"><div class="field"><label for="friendReadX">x좌표</label><input id="friendReadX" inputmode="numeric" autocomplete="off"></div><div class="field"><label for="friendReadY">y좌표</label><input id="friendReadY" inputmode="numeric" autocomplete="off"></div></div><div id="friendReadPreview" class="preview">내가 읽은 좌표: ( , )</div><button id="friendReadSubmit" class="primary">좌표 확인하기</button><div id="friendTaskStatus" class="status ${F.readAttempt?"help":""}">${F.readAttempt?"주황색 점선을 따라 x좌표와 y좌표를 다시 확인하세요.":"정답을 확인하기 전에는 친구의 좌표가 기록판에 공개되지 않습니다."}</div>`;
@@ -590,14 +728,14 @@ function submitFriendRead(){
 }
 function startFriendReadClock(){stopFriendReadClock();F.readTime=15;updateFriendUI();F.readClock=setInterval(()=>{F.readTime--;updateFriendUI();if(F.readTime<=0){stopFriendReadClock();const p=F.pendingRead;if(!p)return;if(F.readAttempt===0){F.readAttempt=1;friendTaskStatus("시간이 끝났습니다. 점선 힌트를 보고 다시 입력하세요.","help");drawFriendBoard();startFriendReadClock()}else{F.wrong++;p.record.revealed=true;renderFriendRecords();friendTaskStatus(`시간이 끝났습니다. 정답은 (${p.x}, ${p.y})입니다.`,"bad");F.pendingRead=null;drawFriendBoard();updateFriendUI();setTimeout(renderFriendMove,1300)}}},1000)}
 function stopFriendReadClock(){clearInterval(F.readClock);F.readClock=null}
-function startFriendMoveClock(){stopFriendMoveClock();updateFriendUI();F.moveClock=setInterval(()=>{if(F.phase!=="move")return;if(F.inByo){F.byoLeft--;if(F.byoLeft<=0){F.byoRemaining--;if(F.byoRemaining<=0){stopFriendMoveClock();friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"timeoutLoss"}}).catch(()=>{});return}F.byoLeft=60;showFriendNotice(`초읽기 1회 사용\n남은 기회 ${F.byoRemaining}회`,1400)}}else{F.moveLeft--;if(F.moveLeft<=0){F.inByo=true;F.byoLeft=60;showFriendNotice("기본시간 종료\n60초 초읽기를 시작합니다.",1500)}}updateFriendUI()},1000)}
+function startFriendMoveClock(){stopFriendMoveClock();updateFriendUI();F.moveClock=setInterval(()=>{if(F.phase!=="move")return;if(F.inByo){F.byoLeft--;if(F.byoLeft<=0){F.byoRemaining--;if(F.byoRemaining<=0){stopFriendMoveClock();friendSendEvent({type:"timeoutLoss"}).catch(()=>{});return}F.byoLeft=60;showFriendNotice(`초읽기 1회 사용\n남은 기회 ${F.byoRemaining}회`,1400)}}else{F.moveLeft--;if(F.moveLeft<=0){F.inByo=true;F.byoLeft=60;showFriendNotice("기본시간 종료\n60초 초읽기를 시작합니다.",1500)}}updateFriendUI()},1000)}
 function stopFriendMoveClock(){clearInterval(F.moveClock);F.moveClock=null}
 function updateFriendUI(){
   const turn=friendPlayer(F.turnId);$("#friendTurn").textContent=turn?turn.name:"대기 중";$("#friendMyColor").textContent=F.myColor?(F.myColor==="black"?"검은색 돌":"흰색 돌"):"미정";$("#friendCorrect").textContent=F.firstCorrect+F.retryCorrect;$("#friendScore").textContent=F.score;$("#friendQuizTime").textContent=F.phase==="read"?`${F.readTime}초`:"-";const t=F.inByo?F.byoLeft:F.moveLeft;$("#friendMoveTime").textContent=`${F.inByo?"초읽기":"기본"} ${fmt(t)}`;$("#friendByo").textContent=`${F.byoRemaining}회`;$("#friendMatchState").textContent=F.gameOver?"종료":F.started?(F.phase==="read"?"좌표 읽기":F.phase==="move"?"내 착수":"상대 차례"):F.players.length<2?"친구 대기":"시작 준비";renderFriendRecords()
 }
 function renderFriendGameOver(text){$("#friendTaskCard").className="card friend-task turn-mission";$("#friendTaskArea").innerHTML=`<h2>대결 종료</h2><div class="status ok">${escapeHTML(text)}</div><div class="guide"><b>좌표 읽기 결과</b><br>첫 시도 정답 ${F.firstCorrect}개 · 재도전 정답 ${F.retryCorrect}개 · 오답 ${F.wrong}개 · 점수 ${F.score}점</div><div class="actions"><button class="primary" onclick="location.reload()">새 대결 시작</button></div>`;updateFriendUI()}
-$("#friendExitBtn").addEventListener("click",async()=>{try{if(F.room&&F.playerId)await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"leave"}})}catch{}location.reload()});
-window.addEventListener("beforeunload",()=>{if(F.room&&F.playerId)navigator.sendBeacon?.("/api/leave-beacon",new Blob([JSON.stringify({code:F.room,playerId:F.playerId})],{type:"application/json"}))});
+$("#friendExitBtn").addEventListener("click",async()=>{F.closing=true;try{if(F.room&&F.playerId)await friendSendEvent({type:"leave"})}catch{}try{F.conn?.close();F.peer?.destroy()}catch{}location.reload()});
+window.addEventListener("beforeunload",()=>{F.closing=true;if(F.transport==="local"&&F.room&&F.playerId)navigator.sendBeacon?.("/api/leave-beacon",new Blob([JSON.stringify({code:F.room,playerId:F.playerId})],{type:"application/json"}));try{F.conn?.close();F.peer?.destroy()}catch{}});
 
 
 $("#startBtn").addEventListener("click",()=>{if($("#gameMode").value==="friend"){startFriendMode();return}S.name=$("#studentName").value.trim()||"학생";S.difficulty=$("#difficulty").value;[S.min,S.max]=rangeSettings(S.difficulty);S.board=new Map();$("#startScreen").classList.add("hidden");$("#gameScreen").classList.remove("hidden");updatePlayerLabels();drawBoard();updateUI();showDiceSetup()});
