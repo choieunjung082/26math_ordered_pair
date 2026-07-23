@@ -1,138 +1,197 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI와 대결하는 좌표 오목</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI·친구와 대결하는 좌표 오목</title>
 <style>
 :root{
-  --bg:#f5f7fb;--card:#fff;--ink:#182033;--muted:#667085;--grid:#d9dee8;
-  --axis:#111827;--blue:#2563eb;--red:#dc2626;--orange:#ea580c;--purple:#7c3aed;
-  --black:#111;--border:#d0d5dd;--shadow:0 10px 28px rgba(16,24,40,.08)
+  --bg:#f4f7fb;--card:#fff;--ink:#182033;--muted:#667085;--line:#d0d5dd;
+  --grid:#dce2ea;--axis:#111827;--blue:#2563eb;--blue-soft:#eff6ff;
+  --red:#dc2626;--red-soft:#fef2f2;--orange:#ea580c;--orange-soft:#fff7ed;
+  --purple:#7c3aed;--purple-soft:#f5f3ff;--green:#15803d;--shadow:0 10px 28px rgba(16,24,40,.08)
 }
-*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,"Noto Sans KR",sans-serif}
-button,input,select,textarea{font:inherit} button{cursor:pointer}
-.app{max-width:1400px;margin:auto;padding:18px}
-header{text-align:center;margin-bottom:14px}
-h1{margin:0 0 6px;font-size:clamp(1.7rem,4vw,2.5rem)}
-.subtitle{color:var(--muted);margin:0}
-.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px}
-.hidden{display:none!important}
-.start-screen{max-width:760px;margin:30px auto}
-.guide{background:#eef4ff;border-left:5px solid var(--blue);padding:14px 16px;border-radius:12px;margin:16px 0}
-.guide h2{margin-top:0}.guide p{margin:.45rem 0}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label{display:block;font-weight:700;margin-bottom:7px}
-input,select,textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px;background:#fff}
-.primary{background:var(--blue);color:white;border:0;border-radius:12px;padding:12px 18px;font-weight:800}
-.secondary{background:white;color:var(--ink);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-weight:700}
-.danger{background:#fff1f2;color:var(--red);border:1px solid #fecdd3;border-radius:12px;padding:10px 14px}
-.start-btn{width:100%;margin-top:16px}
-.game-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
-.board-card{padding:14px}.board-wrap{max-width:760px;margin:auto}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,"Noto Sans KR",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
+.app{max-width:1440px;margin:auto;padding:16px}header{text-align:center;margin:4px 0 14px}
+h1{font-size:clamp(1.7rem,4vw,2.5rem);margin:0 0 6px}.subtitle{margin:0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:17px}.hidden{display:none!important}
+.start{max-width:820px;margin:28px auto}.guide{background:#eef4ff;border-left:5px solid var(--blue);padding:14px 16px;border-radius:12px;margin:14px 0;line-height:1.65}.guide h2,.guide h3{margin-top:0}.guide p{margin:.35rem 0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label{display:block;font-weight:800;margin-bottom:7px}
+input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:3px solid rgba(37,99,235,.16);border-color:var(--blue)}
+.primary,.secondary,.hint-btn,.danger{border-radius:11px;padding:11px 15px;font-weight:800}
+.primary{border:0;background:var(--blue);color:#fff}.secondary{border:1px solid var(--line);background:#fff;color:var(--ink)}
+.hint-btn{border:1px solid #fdba74;background:var(--orange-soft);color:#c2410c}.danger{border:1px solid #fecaca;background:var(--red-soft);color:#b91c1c}
+.actions{display:flex;gap:8px;flex-wrap:wrap}.start-btn{width:100%;margin-top:16px;padding:13px}
+.game-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:15px;align-items:start}.board-card{padding:13px}.board-wrap{position:relative;max-width:790px;margin:auto}
 svg{display:block;width:100%;height:auto;background:#fff;border-radius:14px;touch-action:none}
-.side{display:grid;gap:14px}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px}
-.stat b{display:block;font-size:.82rem;color:var(--muted);margin-bottom:3px}
-.turn.student{border-left:6px solid #111}.turn.ai{border-left:6px solid var(--purple)}
-.status{min-height:52px;padding:12px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);line-height:1.5}
-.status.ok{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
-.status.bad{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
-.status.help{background:#fff7ed;border-color:#fdba74;color:#c2410c}
-.coord-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.preview{margin:10px 0;font-weight:800;min-height:24px}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.records{overflow:auto;max-height:270px}table{border-collapse:collapse;width:100%;font-size:.92rem}
-th,td{border:1px solid #d8dee8;padding:8px;text-align:center}th{background:#f1f5f9}
-.overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
-.modal{max-width:720px;width:100%;background:#fff;border-radius:18px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
-.modal h2{margin-top:0}.options{display:grid;gap:10px;margin:14px 0}
-.option{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--border);padding:11px;border-radius:12px}
-.feedback{padding:12px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);margin:10px 0}
-.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.result-box{padding:12px;border:1px solid var(--border);border-radius:12px;background:#fafafa}
-footer{text-align:center;color:var(--muted);margin:18px 0}
-.stone{transform-box:fill-box;transform-origin:center;animation:pop .28s ease-out}
-.flash{animation:flash 1s ease-in-out 1}
-@keyframes pop{0%{transform:scale(.2);opacity:.2}100%{transform:scale(1);opacity:1}}
-@keyframes flash{0%,100%{opacity:1}50%{opacity:.2}}
-.board-notice{font-weight:800;fill:#111827}.dice-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.dice-box{border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;background:#f8fafc}.die{font-size:3rem;line-height:1}.rule-note{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:12px;padding:12px;margin-top:12px}
-@media(max-width:980px){.game-layout{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr}.records{grid-column:1/-1}}
-@media(max-width:650px){.app{padding:10px}.form-grid,.side,.results-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.card{padding:14px}}
+.board-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;padding:22px}
+.board-notice{max-width:80%;background:rgba(255,255,255,.95);border:2px solid #93c5fd;border-radius:16px;padding:15px 18px;text-align:center;font-size:clamp(1rem,2.4vw,1.35rem);font-weight:900;box-shadow:0 12px 30px rgba(15,23,42,.16);white-space:pre-line}
+.side{display:grid;gap:13px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:9px}.stat b{display:block;color:var(--muted);font-size:.79rem;margin-bottom:3px}.stat span{font-weight:800}
+.player-line{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eef2f6}.player-line:last-child{border-bottom:0}.stone-dot{display:inline-block;width:18px;height:18px;border-radius:50%;vertical-align:-4px;margin-right:5px}.stone-black{background:#111;border:2px solid #111}.stone-white{background:#fff;border:2px solid #475569}
+.turn-student{border-left:6px solid #111}.turn-ai{border-left:6px solid var(--purple)}.turn-mission{border-left:6px solid var(--blue)}
+.task-card h2{font-size:1.13rem;margin:0 0 12px}.coord-inputs{display:grid;grid-template-columns:1fr 1fr;gap:9px}.preview{font-weight:900;margin:10px 0;min-height:24px}.status{margin-top:10px;min-height:50px;padding:11px;border:1px solid var(--line);border-radius:11px;background:#f8fafc;line-height:1.48}.status.ok{background:var(--blue-soft);border-color:#93c5fd;color:#1d4ed8}.status.bad{background:var(--red-soft);border-color:#fecaca;color:#b91c1c}.status.help{background:var(--orange-soft);border-color:#fdba74;color:#c2410c}
+.problem-number{font-size:.82rem;font-weight:900;color:var(--blue);letter-spacing:.05em}.problem-prompt{font-weight:800;line-height:1.55;margin:7px 0 12px}.mini-visual{border:1px solid #dbe3ed;background:#fff;border-radius:12px;padding:8px;margin:10px 0}.choices{display:grid;gap:8px}.choice{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.choice input{width:auto;margin-top:3px}
+.hint-panel{padding:10px;border-radius:10px;background:var(--orange-soft);border:1px solid #fdba74;color:#9a3412;margin:9px 0}.answer-box{padding:10px;border:1px solid #93c5fd;background:var(--blue-soft);border-radius:10px;margin-top:9px}
+.records{overflow:auto;max-height:300px}.records h2,.skill-card h2{font-size:1.08rem;margin-top:0}table{border-collapse:collapse;width:100%;font-size:.88rem}th,td{border:1px solid #d8dee8;padding:7px;text-align:center}th{background:#f1f5f9}
+.skill-row{display:grid;grid-template-columns:76px 1fr 40px;gap:7px;align-items:center;margin:7px 0;font-size:.83rem}.skill-bar{height:9px;border-radius:20px;background:#e5e7eb;overflow:hidden}.skill-fill{height:100%;background:var(--blue)}
+.overlay{position:fixed;inset:0;z-index:30;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:16px}.modal{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:21px;box-shadow:0 22px 70px rgba(0,0,0,.28)}.modal h2{margin-top:0}.modal-options{display:grid;gap:9px;margin:12px 0}.modal-option{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--line);border-radius:11px;padding:10px}.modal-option input{width:auto;margin-top:3px}
+.dice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}.dice-box{text-align:center;background:#f8fafc;border:1px solid var(--line);border-radius:13px;padding:14px}.die{font-size:3rem;line-height:1.1}.rule-note{background:var(--orange-soft);border:1px solid #fdba74;color:#9a3412;padding:11px;border-radius:11px;margin-top:10px}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.result-box{background:#fafafa;border:1px solid var(--line);border-radius:11px;padding:11px}.result-box b{display:block;color:var(--muted);font-size:.82rem;margin-bottom:4px}.feedback-level{margin:15px 0}.teacher-table{margin:12px 0}.bank-badge{display:inline-block;background:var(--purple-soft);color:#6d28d9;border:1px solid #c4b5fd;padding:4px 8px;border-radius:999px;font-size:.82rem;font-weight:800}
+footer{text-align:center;color:var(--muted);margin:18px 0}.stone{transform-box:fill-box;transform-origin:center;animation:pop .28s ease-out}.flash{animation:flash 1s ease-in-out 1}
+@keyframes pop{from{transform:scale(.2);opacity:.2}to{transform:scale(1);opacity:1}}@keyframes flash{0%,100%{opacity:1}50%{opacity:.15}}
+
+.mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.mode-btn{padding:13px;border:2px solid var(--line);border-radius:13px;background:#fff;font-weight:900;color:var(--ink)}
+.mode-btn.active{border-color:var(--blue);background:var(--blue-soft);color:#1d4ed8}
+.room-panel{margin:13px 0;padding:14px;border:1px solid var(--line);border-radius:14px;background:#f8fafc}
+.room-code{display:inline-block;font-size:2rem;font-weight:950;letter-spacing:.22em;color:var(--purple);font-variant-numeric:tabular-nums}
+.connection-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:6px}.connection-dot.ok{background:#16a34a}.connection-dot.bad{background:var(--red)}
+.friend-layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:15px;align-items:start}.friend-player{display:flex;justify-content:space-between;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}.friend-player.me{border-color:#93c5fd;background:var(--blue-soft)}
+.friend-log{max-height:190px;overflow:auto;font-size:.9rem;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px}.friend-log p{margin:.35rem 0}.friend-task h2{font-size:1.13rem;margin:0 0 12px}
+.friend-records{overflow:auto;max-height:265px}.friend-records h2{font-size:1.08rem;margin-top:0}.friend-score{color:var(--blue);font-weight:900}
+@media(max-width:1000px){.friend-layout{grid-template-columns:1fr}.friend-side{display:grid;grid-template-columns:1fr 1fr;gap:13px}.friend-records,.friend-log-card{grid-column:1/-1}}
+@media(max-width:650px){.mode-tabs,.friend-side{grid-template-columns:1fr}.room-code{font-size:1.7rem}}
+
+@media(max-width:1000px){.game-layout{grid-template-columns:1fr}.side{grid-template-columns:1fr 1fr}.records,.skill-card{grid-column:1/-1}}
+@media(max-width:650px){.app{padding:9px}.form-grid,.side,.result-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.card{padding:13px}.board-notice{max-width:92%}}
 </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <h1>AI와 대결하는 좌표 오목</h1>
-  <p class="subtitle">좌표를 사용하여 AI에게 정확한 위치를 전달하고 오목을 완성해 보세요.</p>
+  <h1>AI·친구와 대결하는 좌표 오목</h1>
+  <p class="subtitle">좌표를 사용하여 숫AI돌 또는 친구에게 정확한 위치를 전달하고 오목을 완성해 보세요.</p>
 </header>
 
-<section id="startScreen" class="card start-screen">
+<section id="startScreen" class="card start">
   <div class="guide">
     <h2>학습 안내</h2>
     <p>좌표평면에서는 모든 위치를 두 수의 순서쌍으로 나타낼 수 있습니다.</p>
-    <p>가로 위치인 x좌표를 먼저 쓰고, 세로 위치인 y좌표를 나중에 씁니다.</p>
-    <p>AI와 좌표로 위치를 주고받으며 오목 대결을 해보세요.</p>
+    <p>가로 위치인 <b>x좌표를 먼저</b> 쓰고, 세로 위치인 <b>y좌표를 나중</b>에 씁니다.</p>
+    <p>숫AI돌 또는 친구와 좌표로 위치를 주고받으며 오목 대결을 해보세요.</p>
+    <p><span class="bank-badge" id="bankInfo">적응형 문제은행 준비 중</span></p>
   </div>
+  <div class="mode-tabs" role="group" aria-label="대결 방식 선택">
+    <button type="button" id="aiModeBtn" class="mode-btn active">🤖 숫AI돌과 대결</button>
+    <button type="button" id="friendModeBtn" class="mode-btn">👥 친구와 2인 대결</button>
+  </div>
+  <input type="hidden" id="gameMode" value="ai">
   <div class="form-grid">
-    <div class="field"><label for="studentName">학생 이름</label><input id="studentName" autocomplete="name" /></div>
+    <div class="field"><label for="studentName">학생 이름</label><input id="studentName" autocomplete="name" maxlength="20"></div>
     <div class="field"><label for="difficulty">난이도</label>
       <select id="difficulty">
-        <option value="basic7">기초: -3부터 3, 모든 좌표 표시</option>
-        <option value="standard11" selected>기본: -5부터 5, 모든 좌표 표시</option>
-        <option value="challenge15">도전: -7부터 7, 일부 숫자 숨김</option>
+        <option value="basic">기초: -3부터 3, 모든 좌표 숫자 표시</option>
+        <option value="standard" selected>기본: -5부터 5, 모든 좌표 숫자 표시</option>
+        <option value="challenge">도전: -7부터 7, 일부 눈금 숫자 숨김</option>
       </select>
     </div>
+  </div>
+  <div id="friendRoomPanel" class="room-panel hidden">
+    <h3 style="margin-top:0">4자리 숫자 코드로 친구와 연결하기</h3>
+    <div class="form-grid">
+      <div class="field"><label for="roomAction">방 이용 방법</label>
+        <select id="roomAction"><option value="create">새 방 만들기</option><option value="join">4자리 코드로 참가하기</option></select>
+      </div>
+      <div id="roomCodeField" class="field"><label for="roomCodeInput">사용할 4자리 방 코드</label><input id="roomCodeInput" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="one-time-code" aria-label="4자리 숫자 방 코드"></div>
+    </div>
+    <p style="margin-bottom:0;color:var(--muted)">두 학생이 약속한 숫자 4자리를 입력하세요. 첫 번째 학생은 그 코드로 방을 만들고, 두 번째 학생은 같은 코드로 참가합니다.</p>
+  </div>
+  <div class="rule-note">
+    <b>시간 규칙:</b> 학생 착수 기본시간은 3분입니다. 기본시간이 끝나면 60초 초읽기 3회를 사용하며, 모두 소진하면 시간패가 됩니다. 좌표 문제의 제한 시간은 각 15초입니다.
   </div>
   <button id="startBtn" class="primary start-btn">좌표 오목 시작하기</button>
 </section>
 
 <section id="gameScreen" class="hidden">
   <div class="game-layout">
-    <div class="card board-card">
-      <div class="guide">
-        <strong>게임 규칙</strong><br>
-        AI와 학생은 오목판의 위치를 직접 가리킬 수 없습니다. 돌을 놓을 위치를 오직 순서쌍으로만 전달할 수 있습니다.
+    <section class="card board-card">
+      <div class="guide" style="margin-top:0">
+        <b>대결 규칙</b><br>오목판을 직접 클릭할 수 없습니다. 학생은 돌을 놓을 위치를 반드시 순서쌍으로 전달하고, 숫AI돌의 착수 뒤에는 적응형 좌표 문제를 해결합니다.
       </div>
-      <div class="board-wrap"><svg id="board" viewBox="0 0 760 760" aria-label="좌표 오목판"></svg></div>
-    </div>
+      <div class="board-wrap">
+        <svg id="board" viewBox="0 0 760 760" aria-label="좌표평면 오목판"></svg>
+        <div id="boardOverlay" class="board-overlay hidden"><div id="boardNotice" class="board-notice"></div></div>
+      </div>
+    </section>
 
     <aside class="side">
       <section class="card">
         <div class="stats">
-          <div class="stat"><b>현재 문제</b><span id="currentQ">0</span> / <span id="totalQ">10</span></div>
-          <div class="stat"><b>현재 차례</b><span id="turnText">학생</span></div>
-          <div class="stat"><b>정답 수</b><span id="correctCount">0</span></div>
-          <div class="stat"><b>재도전 정답</b><span id="retryCount">0</span></div>
-          <div class="stat"><b>오답 수</b><span id="wrongCount">0</span></div>
+          <div class="stat"><b>현재 문제</b><span id="qNow">0</span> / <span id="qTotal">10</span></div>
+          <div class="stat"><b>현재 차례</b><span id="turnText">준비</span></div>
+          <div class="stat"><b>첫 시도 정답</b><span id="firstCorrect">0</span></div>
+          <div class="stat"><b>재도전 정답</b><span id="retryCorrect">0</span></div>
+          <div class="stat"><b>오답</b><span id="wrongCount">0</span></div>
           <div class="stat"><b>누적 점수</b><span id="score">0</span></div>
-          <div class="stat"><b>좌표 읽기 시간</b><span id="timer">-</span></div>
-          <div class="stat"><b>착수 시간</b><span id="moveTimer">기본 3:00</span></div>
-          <div class="stat"><b>초읽기 기회</b><span id="byoCount">3회</span></div>
-          <div class="stat"><b>승리</b>학생 <span id="studentWins">0</span> · AI <span id="aiWins">0</span></div>
+          <div class="stat"><b>문제 시간</b><span id="quizTime">-</span></div>
+          <div class="stat"><b>착수 시간</b><span id="moveTime">기본 3:00</span></div>
+          <div class="stat"><b>초읽기</b><span id="byo">3회</span></div>
+          <div class="stat"><b>오목 승리</b><span id="wins">0 : 0</span></div>
         </div>
       </section>
 
-      <section id="interactionCard" class="card turn student">
-        <h2 id="promptTitle">검은 돌을 놓을 위치를 순서쌍으로 나타내세요.</h2>
-        <div class="coord-inputs">
-          <div class="field"><label for="xInput">x좌표</label><input id="xInput" inputmode="numeric" /></div>
-          <div class="field"><label for="yInput">y좌표</label><input id="yInput" inputmode="numeric" /></div>
-        </div>
-        <div id="preview" class="preview">선택한 위치: ( , )</div>
-        <div class="actions">
-          <button id="submitBtn" class="primary">이 좌표에 돌 놓기</button>
-        </div>
-        <div id="status" class="status">x좌표와 y좌표를 입력하세요.</div>
+      <section class="card">
+        <div class="player-line"><span><i id="studentStone" class="stone-dot stone-black"></i><b id="studentLabel">학생</b></span><span id="studentOrder">-</span></div>
+        <div class="player-line"><span><i id="aiStone" class="stone-dot stone-white"></i><b>숫AI돌</b></span><span id="aiOrder">-</span></div>
+      </section>
+
+      <section id="taskCard" class="card task-card turn-student">
+        <div id="taskArea"></div>
+      </section>
+
+      <section class="card skill-card">
+        <h2>숫AI돌의 맞춤 학습 분석</h2>
+        <p style="font-size:.82rem;color:var(--muted);margin-top:-5px">틀린 영역은 다음 문제에서 더 자주 출제됩니다.</p>
+        <div id="skillBars"></div>
       </section>
 
       <section class="card records">
         <h2>좌표로 주고받은 위치</h2>
-        <table>
-          <thead><tr><th>차례</th><th>학생이 놓은 돌</th><th>AI가 놓은 돌</th></tr></thead>
-          <tbody id="recordBody"></tbody>
-        </table>
+        <table><thead><tr><th>차례</th><th id="studentRecordHead">학생</th><th>숫AI돌</th></tr></thead><tbody id="recordBody"></tbody></table>
+      </section>
+    </aside>
+  </div>
+</section>
+
+
+<section id="friendScreen" class="hidden">
+  <div class="friend-layout">
+    <section class="card board-card">
+      <div class="guide" style="margin-top:0">
+        <b>친구 대전 규칙</b><br>
+        오목판을 직접 클릭할 수 없습니다. 자신의 차례에는 순서쌍을 입력해 착수하고, 친구가 둔 돌의 좌표를 읽어야 다음 착수가 열립니다. 방에는 두 명만 참가할 수 있습니다.
+      </div>
+      <div class="board-wrap">
+        <svg id="friendBoard" viewBox="0 0 760 760" aria-label="친구 대전 좌표평면 오목판"></svg>
+        <div id="friendBoardOverlay" class="board-overlay hidden"><div id="friendBoardNotice" class="board-notice"></div></div>
+      </div>
+    </section>
+    <aside class="friend-side side">
+      <section class="card">
+        <h2 style="margin-top:0">대결방 <span id="friendRoomCode" class="room-code"></span></h2>
+        <p><span id="friendConnDot" class="connection-dot"></span><span id="friendConnection">연결 중</span></p>
+        <div id="friendPlayers"></div>
+        <div class="stats">
+          <div class="stat"><b>현재 차례</b><span id="friendTurn">대기 중</span></div>
+          <div class="stat"><b>내 돌</b><span id="friendMyColor">미정</span></div>
+          <div class="stat"><b>좌표 정답</b><span id="friendCorrect">0</span></div>
+          <div class="stat"><b>누적 점수</b><span id="friendScore" class="friend-score">0</span></div>
+          <div class="stat"><b>문제 시간</b><span id="friendQuizTime">-</span></div>
+          <div class="stat"><b>착수 시간</b><span id="friendMoveTime">기본 3:00</span></div>
+          <div class="stat"><b>초읽기</b><span id="friendByo">3회</span></div>
+          <div class="stat"><b>대결 상태</b><span id="friendMatchState">친구 대기</span></div>
+        </div>
+      </section>
+      <section id="friendTaskCard" class="card friend-task turn-ai"><div id="friendTaskArea"><h2>친구가 들어오기를 기다리고 있습니다.</h2><div class="status help">방 코드를 친구에게 알려주세요.</div></div></section>
+      <section class="card friend-records">
+        <h2>좌표로 주고받은 위치</h2>
+        <table><thead><tr><th>차례</th><th>학생</th><th>좌표</th></tr></thead><tbody id="friendRecordBody"></tbody></table>
+      </section>
+      <section class="card friend-log-card">
+        <h2 style="font-size:1.08rem;margin-top:0">대결 알림</h2><div id="friendLog" class="friend-log"></div>
+        <div class="actions" style="margin-top:10px"><button id="friendExitBtn" class="secondary">대결방 나가기</button></div>
       </section>
     </aside>
   </div>
@@ -140,8 +199,9 @@ footer{text-align:center;color:var(--muted);margin:18px 0}
 
 <section id="resultScreen" class="card hidden">
   <h2>최종 결과</h2>
-  <div id="resultSummary" class="results-grid"></div>
-  <div id="achievementFeedback" class="guide"></div>
+  <div id="resultGrid" class="result-grid"></div>
+  <div id="achievement" class="guide feedback-level"></div>
+  <div id="adaptiveFeedback" class="guide"></div>
   <div class="actions">
     <button id="teacherBtn" class="secondary">교사용 결과표 보기</button>
     <button id="restartBtn" class="primary">다시 게임하기</button>
@@ -153,377 +213,396 @@ footer{text-align:center;color:var(--muted);margin:18px 0}
 </div>
 
 <script>
-const $=s=>document.querySelector(s);
-const board=$("#board"), NS="http://www.w3.org/2000/svg";
-const state={
-  name:"",difficulty:"standard11",min:-5,max:5,size:11,board:new Map(),phase:"setup",
-  question:0,total:10,attempt:0,score:0,correct:0,retryCorrect:0,wrong:0,
-  studentWins:0,aiWins:0,records:[],lastAI:null,timer:null,timeLeft:15,
+"use strict";
+const $=s=>document.querySelector(s), NS="http://www.w3.org/2000/svg", AI_NAME="숫AI돌";
+const SKILL_LABELS={plot:"위치 찾기",read:"좌표 읽기",x:"x좌표",y:"y좌표",order:"순서",sign:"부호",quadrant:"사분면",axis:"축·원점",numberline:"수직선",reason:"판별·추론",utility:"편리함"};
+const ALL_SKILLS=Object.keys(SKILL_LABELS);
+
+const S={
+  name:"학생",difficulty:"standard",min:-5,max:5,board:new Map(),phase:"setup",
   studentColor:"black",aiColor:"white",firstPlayer:"student",diceWinner:null,
-  mainTime:180,byoTime:60,byoRemaining:3,moveTimer:null,moveTimeLeft:180,inByo:false,
-  boardNotice:"",noticeTimer:null,timeLoss:false,
-  orderErrors:0,xErrors:0,yErrors:0,signErrors:0,studentPlacements:0,
-  convenienceCorrect:null,reflection:{q1:null,q2x:"",q2y:"",q3:""},
-  axisStats:{total:0,correct:0},originStats:{asked:false,correct:false},negativeStats:{total:0,correct:0},
-  targetTypes:["Q1","Q2","Q3","Q4","xAxis","yAxis","origin","Q1","Q3","Q4"]
+  questionNo:0,totalQuestions:10,firstCorrect:0,retryCorrect:0,wrong:0,score:0,
+  currentQuestion:null,attempt:0,hintUsed:false,usedIds:new Set(),usedSignatures:new Set(),questionHistory:[],
+  skills:Object.fromEntries(ALL_SKILLS.map(k=>[k,{correct:0,wrong:0}])),
+  records:[],lastAI:null,pendingAIWin:false,studentWins:0,aiWins:0,studentPlacements:0,
+  quizTimer:null,quizTime:15,mainTime:180,moveTimer:null,moveTime:180,inByo:false,byoRemaining:3,nextByoPenalty:0,
+  noticeTimer:null,convenienceCorrect:null,convenienceShown:false,
+  reflection:{q1:false,q2x:"",q2y:"",q3:""},final:null,
+  errorCounts:{x:0,y:0,order:0,sign:0},
+  typeStats:{negative:{t:0,c:0},axis:{t:0,c:0},origin:{t:0,c:0}},
+  aiTargetTypes:["Q1","Q2","Q3","Q4","xAxis","yAxis","origin","Q1","Q3","Q4"]
 };
+let QUESTION_BANK=[];
 
-function settings(){
-  const v=$("#difficulty").value;
-  if(v==="basic7") return {min:-3,max:3};
-  if(v==="challenge15") return {min:-7,max:7};
-  return {min:-5,max:5};
-}
-function key(x,y){return `${x},${y}`}
-function get(x,y){return state.board.get(key(x,y))}
-function setStone(x,y,p){state.board.set(key(x,y),p)}
-function clearBoard(){state.board=new Map();state.lastAI=null;drawBoard()}
-function colorName(who){return (who==="student"?state.studentColor:state.aiColor)==="black"?"검은":"흰"}
-function stoneStyle(player){
-  const color=player==="student"?state.studentColor:state.aiColor;
-  return color==="black"?{fill:"#111",stroke:"#111",width:1.5}:{fill:"#fff",stroke:"#4b5563",width:3};
-}
-function formatTime(sec){const m=Math.floor(sec/60),r=sec%60;return `${m}:${String(r).padStart(2,"0")}`}
-function showBoardNotice(text,duration=1600){
-  state.boardNotice=text;clearTimeout(state.noticeTimer);drawBoard();
-  if(duration>0)state.noticeTimer=setTimeout(()=>{state.boardNotice="";drawBoard()},duration);
-}
-function stopMoveClock(){clearInterval(state.moveTimer);state.moveTimer=null}
-function updateMoveClockUI(){
-  $("#byoCount").textContent=state.byoRemaining+"회";
-  $("#moveTimer").textContent=state.inByo?`초읽기 ${state.moveTimeLeft}초`:`기본 ${formatTime(state.mainTime)}`;
-}
-function startStudentMoveClock(){
-  stopMoveClock();if(state.phase!=="student")return;
-  if(state.mainTime>0){state.inByo=false;state.moveTimeLeft=state.mainTime}else{state.inByo=true;state.moveTimeLeft=state.byoTime}
-  updateMoveClockUI();
-  state.moveTimer=setInterval(()=>{
-    if(state.phase!=="student")return stopMoveClock();
-    state.moveTimeLeft--;
-    if(!state.inByo)state.mainTime=state.moveTimeLeft;
-    updateMoveClockUI();
-    if(state.moveTimeLeft<=0){
-      stopMoveClock();
-      if(!state.inByo){state.mainTime=0;state.inByo=true;state.moveTimeLeft=state.byoTime;showBoardNotice("기본 시간이 끝났습니다. 60초 초읽기를 시작합니다.",2200);startStudentMoveClock()}
-      else{consumeByoChance()}
-    }
-  },1000)
-}
-function consumeByoChance(){
-  state.byoRemaining--;updateMoveClockUI();
-  if(state.byoRemaining<=0){timeForfeit();return}
-  showBoardNotice(`시간 초과! 초읽기 기회가 1회 차감되었습니다. 남은 기회 ${state.byoRemaining}회`,2600);
-  msg(`60초 안에 착수하지 못해 초읽기 기회가 차감되었습니다. 남은 기회는 ${state.byoRemaining}회입니다.`,"bad");
-  state.inByo=true;state.moveTimeLeft=state.byoTime;startStudentMoveClock();
-}
-function timeForfeit(){
-  stopMoveClock();clearInterval(state.timer);state.timeLoss=true;state.aiWins++;updateUI();
-  showBoardNotice("초읽기 기회를 모두 사용하여 시간패(기권패)했습니다.",0);
-  showModal(`<h2>시간패</h2><p>모든 초읽기 기회 3회를 사용하기 전까지 착수하지 못해 시간패(기권패) 처리되었습니다.</p><button class="primary" onclick="continueAfterTimeLoss()">새 좌표판에서 계속하기</button>`)
-}
-window.continueAfterTimeLoss=function(){hideModal();state.timeLoss=false;state.byoRemaining=3;state.mainTime=180;state.inByo=false;clearBoard();beginNextTurn()}
-function svgEl(tag,a={},text=""){const e=document.createElementNS(NS,tag);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));if(text)e.textContent=text;return e}
-function coordToPx(v){const pad=64, span=632;return pad+(v-state.min)*(span/(state.max-state.min))}
-function yToPx(v){const pad=64,span=632;return pad+(state.max-v)*(span/(state.max-state.min))}
-function drawBoard(){
-  board.innerHTML="";
-  board.appendChild(svgEl("rect",{x:0,y:0,width:760,height:760,fill:"#fff"}));
-  const step=632/(state.max-state.min), left=64,right=696,top=64,bottom=696;
-  for(let i=state.min;i<=state.max;i++){
-    const x=coordToPx(i),y=yToPx(i), axis=i===0;
-    board.appendChild(svgEl("line",{x1:x,y1:top,x2:x,y2:bottom,stroke:axis?"#111827":"#d9dee8","stroke-width":axis?3:1}));
-    board.appendChild(svgEl("line",{x1:left,y1:y,x2:right,y2:y,stroke:axis?"#111827":"#d9dee8","stroke-width":axis?3:1}));
-  }
-  // arrowheads
-  board.appendChild(svgEl("path",{d:`M ${right+12} ${yToPx(0)} l -14 -8 v 16 z`,fill:"#111827"}));
-  board.appendChild(svgEl("path",{d:`M ${coordToPx(0)} ${top-12} l -8 14 h 16 z`,fill:"#111827"}));
-  board.appendChild(svgEl("text",{x:right+18,y:yToPx(0)+24,"font-style":"italic","font-family":"Times New Roman","font-size":22},"x"));
-  board.appendChild(svgEl("text",{x:coordToPx(0)-24,y:top-18,"font-style":"italic","font-family":"Times New Roman","font-size":22},"y"));
+function difficultyRank(){return {basic:1,standard:2,challenge:3}[S.difficulty]}
+function rangeSettings(v){return v==="basic"?[-3,3]:v==="challenge"?[-7,7]:[-5,5]}
+function key(x,y){return `${x},${y}`}function getStone(x,y){return S.board.get(key(x,y))}function putStone(x,y,p){S.board.set(key(x,y),p)}
+function escapeHTML(v){return String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function fmt(sec){return `${Math.floor(Math.max(0,sec)/60)}:${String(Math.max(0,sec)%60).padStart(2,"0")}`}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function svgEl(tag,a={},text=""){const e=document.createElementNS(NS,tag);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));if(text!=="")e.textContent=text;return e}
+function colorKorean(c){return c==="black"?"검은색":"흰색"}function playerColor(p){return p==="student"?S.studentColor:S.aiColor}
+function coordType({x,y}){if(x===0&&y===0)return"origin";if(y===0)return"xAxis";if(x===0)return"yAxis";if(x>0&&y>0)return"Q1";if(x<0&&y>0)return"Q2";if(x<0&&y<0)return"Q3";return"Q4"}
+function quadrantName(x,y){if(x===0&&y===0)return"원점";if(y===0)return"x축 위";if(x===0)return"y축 위";if(x>0&&y>0)return"제1사분면";if(x<0&&y>0)return"제2사분면";if(x<0&&y<0)return"제3사분면";return"제4사분면"}
 
-  for(let i=state.min;i<=state.max;i++){
-    const show=state.difficulty!=="challenge15" || i===0 || i%2===0;
-    if(!show) continue;
-    if(i!==0){
-      board.appendChild(svgEl("text",{x:coordToPx(i),y:yToPx(0)+24,"text-anchor":"middle","font-size":13,fill:"#111827"},String(i)));
-      board.appendChild(svgEl("text",{x:coordToPx(0)-12,y:yToPx(i)+5,"text-anchor":"end","font-size":13,fill:"#111827"},String(i)));
-    }
-  }
-  board.appendChild(svgEl("circle",{cx:coordToPx(0),cy:yToPx(0),r:5,fill:"#2563eb"}));
-  board.appendChild(svgEl("text",{x:coordToPx(0)-11,y:yToPx(0)+20,"text-anchor":"end","font-family":"Times New Roman","font-size":17},"O"));
-
-  if(state.lastAI && state.phase==="read"){
-    const {x,y}=state.lastAI;
-    if(state.attempt>=1){
-      board.appendChild(svgEl("line",{x1:coordToPx(x),y1:yToPx(y),x2:coordToPx(x),y2:yToPx(0),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}));
-      board.appendChild(svgEl("line",{x1:coordToPx(x),y1:yToPx(y),x2:coordToPx(0),y2:yToPx(y),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}));
-    }
-    if(state.showAnswer){
-      board.appendChild(svgEl("circle",{cx:coordToPx(x),cy:yToPx(y),r:step*.38,fill:"none",stroke:"#2563eb","stroke-width":4}));
-    }
-  }
-  for(const [k,p] of state.board.entries()){
-    const [x,y]=k.split(",").map(Number);
-    const st=stoneStyle(p);
-    const c=svgEl("circle",{cx:coordToPx(x),cy:yToPx(y),r:Math.max(12,step*.34),fill:st.fill,stroke:st.stroke,"stroke-width":st.width,class:"stone"+(state.lastAI&&x===state.lastAI.x&&y===state.lastAI.y&&state.phase==="read"&&state.attempt===0?" flash":"")});
-    board.appendChild(c);
-  }
-  if(state.boardNotice){
-    const lines=state.boardNotice.split("\n");
-    board.appendChild(svgEl("rect",{x:145,y:315,width:470,height:120,rx:18,fill:"#ffffff",stroke:"#7c3aed","stroke-width":3,opacity:.96}));
-    lines.forEach((line,i)=>board.appendChild(svgEl("text",{x:380,y:360+i*30,"text-anchor":"middle","font-size":20,class:"board-notice"},line)));
-  }
-}
-function updateUI(){
-  $("#currentQ").textContent=state.question;
-  $("#correctCount").textContent=state.correct;
-  $("#retryCount").textContent=state.retryCorrect;
-  $("#wrongCount").textContent=state.wrong;
-  $("#score").textContent=state.score;
-  $("#studentWins").textContent=state.studentWins;$("#aiWins").textContent=state.aiWins;
-  $("#turnText").textContent=state.phase==="student"?"학생":state.phase==="ai"?"AI":state.phase==="read"?"좌표 읽기":"준비";
-  $("#interactionCard").className="card turn "+(state.phase==="student"?"student":"ai");
-  $("#promptTitle").textContent=state.phase==="student"?`${colorName("student")} 돌을 놓을 위치를 순서쌍으로 나타내세요.`:`AI가 방금 놓은 ${colorName("ai")} 돌의 위치를 순서쌍으로 나타내세요.`;
-  updateMoveClockUI();
-  $("#submitBtn").textContent=state.phase==="student"?"이 좌표에 돌 놓기":"좌표 확인하기";
-  updatePreview();renderRecords();
-}
-function updatePreview(){
-  const x=$("#xInput").value.trim(),y=$("#yInput").value.trim();
-  $("#preview").textContent=(state.phase==="student"?"선택한 위치: ":"내가 읽은 좌표: ")+`(${x||" "}, ${y||" "})`;
-}
-function msg(t,type=""){const s=$("#status");s.className="status "+type;s.textContent=t}
-function parseInputs(){
-  const xs=$("#xInput").value.trim(),ys=$("#yInput").value.trim();
-  if(!xs||!ys)return {error:"x좌표와 y좌표를 모두 입력하세요. 순서쌍은 두 수로 나타냅니다."};
-  const x=Number(xs),y=Number(ys);
-  if(!Number.isInteger(x)||!Number.isInteger(y))return {error:"좌표평면의 눈금에 해당하는 정수를 입력하세요."};
-  if(x<state.min||x>state.max||y<state.min||y>state.max)return {error:"현재 좌표평면에 나타난 x좌표와 y좌표의 범위를 확인하세요."};
-  return {x,y};
-}
-function resetInputs(){$("#xInput").value="";$("#yInput").value="";updatePreview()}
-function renderRecords(){
-  $("#recordBody").innerHTML=state.records.map((r,i)=>`<tr><td>${i+1}</td><td>${r.sx===null?"—":`(${r.sx}, ${r.sy})`}</td><td>${r.revealed?`(${r.ax}, ${r.ay})`:"?"}</td></tr>`).join("");
-}
-function linesFrom(x,y,player){
-  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-  return dirs.some(([dx,dy])=>{
-    let c=1;
-    for(const s of [-1,1]){let nx=x+dx*s,ny=y+dy*s;while(get(nx,ny)===player){c++;nx+=dx*s;ny+=dy*s}}
-    return c>=5;
+function buildQuestionBank(){
+  // [9수02-05] 순서쌍과 좌표 문항만 구성합니다.
+  // [9수02-06] 상황을 그래프로 나타내거나 그래프를 해석하는 문항은 포함하지 않습니다.
+  const bank=[];let id=0;const add=q=>bank.push({id:`Q${++id}`,standard:"9수02-05",level:1,...q});
+  const coords=[];for(let x=-7;x<=7;x++)for(let y=-7;y<=7;y++)coords.push({x,y,level:Math.max(Math.abs(x),Math.abs(y))<=3?1:Math.max(Math.abs(x),Math.abs(y))<=5?2:3});
+  // 75개: 좌표평면 점 읽기
+  coords.filter((_,i)=>i%3===0) .slice(0,55).forEach(p=>add({level:p.level,type:"pointRead",skills:["read","x","y","order","sign"],format:"pair",target:p,prompt:`좌표평면에 표시된 점 P의 좌표를 순서쌍으로 나타내세요.`,visual:{kind:"point",...p},hint:"먼저 x축에서 가로 위치를 읽고, 다음 y축에서 세로 위치를 읽으세요."}));
+  // 42개: 성분 확인
+  coords.filter(p=>!(p.x===0&&p.y===0)).filter((_,i)=>i%5===1) .slice(0,30).forEach((p,i)=>add({level:p.level,type:"components",skills:["x","y","order","sign"],format:"pair",target:p,prompt:`점 P(${p.x}, ${p.y})의 x좌표와 y좌표를 차례로 입력하세요.`,hint:"순서쌍의 앞의 수가 x좌표, 뒤의 수가 y좌표입니다."}));
+  // 42개: 사분면·축 분류
+  coords.filter((_,i)=>i%5===2) .slice(0,30).forEach(p=>add({level:p.level,type:"quadrant",skills:["quadrant","axis","sign"],format:"choice",answer:quadrantName(p.x,p.y),prompt:`점 P(${p.x}, ${p.y})는 어디에 있나요?`,choices:["제1사분면","제2사분면","제3사분면","제4사분면","x축 위","y축 위","원점"],hint:"x와 y의 부호를 확인하고, 좌표 중 하나가 0이면 축 위의 점인지 살펴보세요."}));
+  // 36개: 방향 설명을 순서쌍으로
+  coords.filter(p=>!(p.x===0&&p.y===0)).filter((_,i)=>i%6===0) .slice(0,25).forEach(p=>{
+    const h=p.x<0?`왼쪽으로 ${Math.abs(p.x)}칸`:p.x>0?`오른쪽으로 ${p.x}칸`:"가로로 이동하지 않고";
+    const v=p.y<0?`아래쪽으로 ${Math.abs(p.y)}칸`:p.y>0?`위쪽으로 ${p.y}칸`:"세로로 이동하지 않은";
+    add({level:p.level,type:"description",skills:["plot","order","sign"],format:"pair",target:p,prompt:`원점에서 ${h}, ${v} 위치를 순서쌍으로 나타내세요.`,hint:"가로 이동은 x좌표, 세로 이동은 y좌표입니다."});
   });
+  // 24개: 수직선
+  for(let n=-7;n<=7;n++)for(let variant=0;variant<2;variant++)if(!(n===0&&variant===1))add({level:Math.abs(n)<=3?1:Math.abs(n)<=5?2:3,type:"numberline",skills:["numberline","sign"],format:"number",answer:n,prompt:"수직선 위에 표시된 점 P가 나타내는 수를 입력하세요.",visual:{kind:"numberline",value:n},hint:"0의 왼쪽은 음수, 오른쪽은 양수입니다."});
+  // 24개: 부호로 사분면 추론
+  const signs=[[-1,1,"제2사분면"],[1,1,"제1사분면"],[-1,-1,"제3사분면"],[1,-1,"제4사분면"]];
+  for(let i=0;i<16;i++){const [sx,sy,a]=signs[i%4];add({level:i<8?1:i<16?2:3,type:"signQuadrant",skills:["quadrant","sign","reason"],format:"choice",answer:a,prompt:`a ${sx<0?"<":">"} 0, b ${sy<0?"<":">"} 0일 때 점 (a, b)는 어느 사분면에 있나요?`,choices:["제1사분면","제2사분면","제3사분면","제4사분면"],hint:"x좌표와 y좌표가 각각 양수인지 음수인지 사분면의 부호와 연결하세요."});}
+  // 24개: 옳은 설명 판별
+  const statements=[
+    ["점 (0, 4)는 y축 위에 있다.",true,"axis"],["점 (-3, 0)은 y축 위에 있다.",false,"axis"],["제1사분면의 점은 두 좌표가 모두 양수이다.",true,"quadrant"],["점 (2, -5)는 제2사분면에 있다.",false,"quadrant"],
+    ["점 (0, 0)은 원점이다.",true,"axis"],["x축 위의 점은 y좌표가 0이다.",true,"axis"],["y축 위의 점은 x좌표가 0이다.",true,"axis"],["순서쌍 (x, y)에서는 y좌표를 먼저 쓴다.",false,"order"],
+    ["점 (-2, 3)은 원점에서 왼쪽, 위쪽에 있다.",true,"sign"],["점 (4, -1)은 제4사분면에 있다.",true,"quadrant"],["제3사분면의 점은 x좌표와 y좌표가 모두 음수이다.",true,"quadrant"],["점 (5, 0)은 어느 사분면에도 속하지 않는다.",true,"axis"],
+    ["점 (0, -6)은 y축 위에 있다.",true,"axis"],["점 (-4, 0)은 x축 위에 있다.",true,"axis"],["제2사분면의 점은 x좌표가 음수이고 y좌표가 양수이다.",true,"quadrant"],["제4사분면의 점은 x좌표가 양수이고 y좌표가 음수이다.",true,"quadrant"],
+    ["점 (0, 2)는 제1사분면에 있다.",false,"axis"],["점 (3, 3)은 x좌표와 y좌표가 같다.",true,"reason"],["x좌표가 같은 두 점을 이으면 y축과 평행한 선분이 된다.",true,"reason"],["y좌표가 같은 두 점을 이으면 x축과 평행한 선분이 된다.",true,"reason"],
+    ["점 (-1, -5)는 제3사분면에 있다.",true,"quadrant"],["원점의 x좌표와 y좌표는 모두 0이다.",true,"axis"],["축 위의 점은 x좌표와 y좌표 중 적어도 하나가 0이다.",true,"axis"],["a<0, b>0이면 점 (a, b)는 제2사분면에 있다.",true,"quadrant"]
+  ];
+  statements.forEach((s,i)=>add({level:i<10?1:i<19?2:3,type:"statement",skills:[s[2],"reason"],format:"choice",answer:s[1]?"옳다":"옳지 않다",prompt:s[0],choices:["옳다","옳지 않다"],hint:"축 위의 점은 사분면에 포함되지 않으며, 순서쌍은 항상 (x, y)입니다."}));
+  // 18개: 같은 좌표/축 추론
+  for(let i=1;i<=12;i++){const a=(i%5)+1,b=((i*2)%5)+1;add({level:i<=6?1:i<=12?2:3,type:"relation",skills:["x","y","reason"],format:"choice",answer:i%2?"x좌표가 같다":"y좌표가 같다",prompt:i%2?`점 A(${a}, ${b})와 점 B(${a}, ${-b})의 공통점은 무엇인가요?`:`점 A(${a}, ${b})와 점 B(${-a}, ${b})의 공통점은 무엇인가요?`,choices:["x좌표가 같다","y좌표가 같다","두 좌표가 모두 같다","공통점이 없다"],hint:"두 순서쌍의 앞의 수끼리, 뒤의 수끼리 비교하세요."});}
+  // 10개: 좌표의 편리함
+  for(let i=0;i<8;i++)add({level:1,type:"utility",skills:["utility"],format:"choice",answer:"순서쌍으로 나타내는 방법",prompt:`중앙에서 오른쪽으로 ${i%4+1}칸, 위쪽으로 ${i%3+1}칸인 위치를 빠르고 정확하게 전달하는 데 더 편리한 방법은 무엇인가요?`,choices:["방향을 문장으로 설명하는 방법","순서쌍으로 나타내는 방법"],hint:"두 수만으로 가로와 세로 위치를 동시에 나타낼 수 있는 방법을 생각하세요."});
+  return bank;
 }
-function emptyCells(){
-  const arr=[];for(let x=state.min;x<=state.max;x++)for(let y=state.min;y<=state.max;y++)if(!get(x,y))arr.push({x,y});return arr
+QUESTION_BANK=buildQuestionBank();
+$("#bankInfo").textContent=`약 ${QUESTION_BANK.length}문항 · [9수02-05] 전용 · [9수02-06] 그래프 문항 제외 · 중복 없는 적응형 출제`;
+
+function activeBank(){const r=difficultyRank();return QUESTION_BANK.filter(q=>q.standard==="9수02-05"&&q.level<=r)}
+function weakness(skill){const d=S.skills[skill];return 1+d.wrong*4-Math.min(d.correct,6)*.35}
+function plannedSkills(){const plan=[["read","x","y"],["quadrant","axis"],["plot","order"],["read","sign"],["numberline"],["x","y"],["read","axis"],["reason","quadrant"],["axis","reason"],["read","order","sign"]];return plan[S.questionNo]||["read"]}
+function questionSignature(q){return `${q.type}|${q.prompt}|${q.target?`${q.target.x},${q.target.y}`:""}|${q.answer??""}|${q.visual?.value??""}`}
+function makeAIReadQuestion(coord){return {id:`AI-${S.questionNo+1}-${coord.x}-${coord.y}-${Date.now()}`,level:1,type:"aiRead",skills:["read","x","y","order","sign"],format:"pair",target:coord,prompt:`${AI_NAME}이 방금 놓은 ${colorKorean(S.aiColor)} 돌의 위치를 순서쌍으로 나타내세요.`,hint:"새로 깜빡이는 돌에서 x축과 y축까지의 위치를 차례로 확인하세요.",visual:{kind:"mainBoard"}}}
+function chooseAdaptiveQuestion(aiCoord){
+  // 오목과 직접 연결되는 좌표 읽기를 4회 이상 보장
+  if([0,3,6,9].includes(S.questionNo))return makeAIReadQuestion(aiCoord);
+  const candidates=activeBank().filter(q=>!S.usedIds.has(q.id)&&!S.usedSignatures.has(questionSignature(q)));if(!candidates.length){S.usedIds.clear();S.usedSignatures.clear();return rand(activeBank())}
+  const planned=plannedSkills();const recentTypes=S.questionHistory.slice(-2).map(q=>q.type);
+  let best=null,bestScore=-Infinity;
+  for(const q of candidates){
+    let score=Math.random()*3;
+    q.skills.forEach(s=>score+=weakness(s));
+    if(q.skills.some(s=>planned.includes(s)))score+=4;
+    if(recentTypes.includes(q.type))score-=4;
+    // 오답이 누적된 기능은 높은 우선순위
+    const maxWeak=Math.max(...q.skills.map(weakness));score+=maxWeak*1.7;
+    if(score>bestScore){best=q;bestScore=score}
+  }
+  S.usedIds.add(best.id);S.usedSignatures.add(questionSignature(best));return best;
 }
-function winningMoves(player){
-  return emptyCells().filter(c=>{setStone(c.x,c.y,player);const w=linesFrom(c.x,c.y,player);state.board.delete(key(c.x,c.y));return w})
-}
-function coordType(c){
-  if(c.x===0&&c.y===0)return"origin";if(c.y===0)return"xAxis";if(c.x===0)return"yAxis";
-  if(c.x>0&&c.y>0)return"Q1";if(c.x<0&&c.y>0)return"Q2";if(c.x<0&&c.y<0)return"Q3";return"Q4";
-}
-function nearestOfType(type,cells){
-  const exact=cells.filter(c=>coordType(c)===type);if(exact.length)return exact;
-  return cells;
-}
-function scoreCell(c,player){
-  let s=0;const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-  for(const [dx,dy] of dirs){
-    for(const p of ["ai","student"]){
-      let count=1;
-      for(const sign of [-1,1]){let nx=c.x+dx*sign,ny=c.y+dy*sign;while(get(nx,ny)===p){count++;nx+=dx*sign;ny+=dy*sign}}
-      s+=(p===player?6:4)*count*count;
+
+function coordX(v){return 64+(v-S.min)*(632/(S.max-S.min))}function coordY(v){return 64+(S.max-v)*(632/(S.max-S.min))}
+function stoneStyle(p){const c=playerColor(p);return c==="black"?{fill:"#111",stroke:"#111",sw:1.5}:{fill:"#fff",stroke:"#475569",sw:3}}
+function drawBoard(){
+  const b=$("#board");b.innerHTML="";b.appendChild(svgEl("rect",{x:0,y:0,width:760,height:760,fill:"#fff"}));
+  const left=64,right=696,top=64,bottom=696,step=632/(S.max-S.min);
+  for(let v=S.min;v<=S.max;v++){
+    const x=coordX(v),y=coordY(v),axis=v===0;
+    b.appendChild(svgEl("line",{x1:x,y1:top,x2:x,y2:bottom,stroke:axis?"#111827":"#dce2ea","stroke-width":axis?3:1}));
+    b.appendChild(svgEl("line",{x1:left,y1:y,x2:right,y2:y,stroke:axis?"#111827":"#dce2ea","stroke-width":axis?3:1}));
+  }
+  b.appendChild(svgEl("path",{d:`M ${right+14} ${coordY(0)} l -15 -8 v 16 z`,fill:"#111827"}));
+  b.appendChild(svgEl("path",{d:`M ${coordX(0)} ${top-14} l -8 15 h 16 z`,fill:"#111827"}));
+  b.appendChild(svgEl("text",{x:right+20,y:coordY(0)+25,"font-style":"italic","font-family":"Times New Roman","font-size":22},"x"));
+  b.appendChild(svgEl("text",{x:coordX(0)-25,y:top-18,"font-style":"italic","font-family":"Times New Roman","font-size":22},"y"));
+  for(let v=S.min;v<=S.max;v++){
+    const show=S.difficulty!=="challenge"||v===0||v%2===0;if(!show||v===0)continue;
+    b.appendChild(svgEl("text",{x:coordX(v),y:coordY(0)+23,"text-anchor":"middle","font-size":13,fill:"#111827"},String(v)));
+    b.appendChild(svgEl("text",{x:coordX(0)-12,y:coordY(v)+5,"text-anchor":"end","font-size":13,fill:"#111827"},String(v)));
+  }
+  b.appendChild(svgEl("circle",{cx:coordX(0),cy:coordY(0),r:5,fill:"#2563eb"}));
+  b.appendChild(svgEl("text",{x:coordX(0)-11,y:coordY(0)+20,"text-anchor":"end","font-family":"Times New Roman","font-size":17},"O"));
+  if(S.currentQuestion?.type==="aiRead"&&S.lastAI){
+    const p=S.lastAI;
+    if(S.attempt>0||S.hintUsed){
+      b.appendChild(svgEl("line",{x1:coordX(p.x),y1:coordY(p.y),x2:coordX(p.x),y2:coordY(0),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}));
+      b.appendChild(svgEl("line",{x1:coordX(p.x),y1:coordY(p.y),x2:coordX(0),y2:coordY(p.y),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}));
     }
+    if(S.currentQuestion.revealed)b.appendChild(svgEl("circle",{cx:coordX(p.x),cy:coordY(p.y),r:step*.39,fill:"none",stroke:"#2563eb","stroke-width":4}));
   }
-  const near=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].filter(([dx,dy])=>get(c.x+dx,c.y+dy)).length;
-  return s+near*3+Math.random()*4;
-}
-function chooseAI(){
-  let candidates=winningMoves("ai");if(candidates.length)return candidates[Math.floor(Math.random()*candidates.length)];
-  candidates=winningMoves("student");if(candidates.length)return candidates[Math.floor(Math.random()*candidates.length)];
-  let cells=emptyCells(),target=state.targetTypes[state.question]||"Q1";
-  let typed=nearestOfType(target,cells);
-  typed.sort((a,b)=>scoreCell(b,"ai")-scoreCell(a,"ai"));
-  return typed.slice(0,Math.min(5,typed.length))[Math.floor(Math.random()*Math.min(5,typed.length))]||cells[0];
-}
-function studentMove(){
-  const r=parseInputs();if(r.error)return msg(r.error,"bad");
-  if(get(r.x,r.y)){
-    if(!get(r.y,r.x) && r.x!==r.y) return askOrderQuestion();
-    return msg("이 좌표에는 이미 돌이 있습니다. 다른 좌표를 선택하세요.","bad");
+  for(const [k,p] of S.board.entries()){
+    const [x,y]=k.split(",").map(Number),st=stoneStyle(p),isNew=S.lastAI&&p==="ai"&&x===S.lastAI.x&&y===S.lastAI.y&&S.phase==="mission";
+    b.appendChild(svgEl("circle",{cx:coordX(x),cy:coordY(y),r:Math.max(11,step*.34),fill:st.fill,stroke:st.stroke,"stroke-width":st.sw,class:`stone${isNew?" flash":""}`}));
   }
-  stopMoveClock();setStone(r.x,r.y,"student");state.studentPlacements++;
-  state.records.push({sx:r.x,sy:r.y,ax:null,ay:null,revealed:false});
-  drawBoard();updateUI();msg(`(${r.x}, ${r.y})를 사용하여 돌의 위치를 정확하게 전달했습니다.`,"ok");resetInputs();
-  if(linesFrom(r.x,r.y,"student")){state.studentWins++;updateUI();showBoardWin("학생이 좌표를 정확하게 전달하여 오목을 완성했습니다.");return}
-  state.phase="ai";updateUI();showBoardNotice("AI가 좌표를 계산하고 있습니다.",800);setTimeout(aiMove,800);
 }
-function askOrderQuestion(){
-  showModal(`<h2>순서 확인</h2><p>순서쌍에서는 가로 위치와 세로 위치 중 어느 것을 먼저 나타낼까요?</p>
-  <div class="options"><button class="secondary" onclick="answerOrder(true)">x좌표</button><button class="secondary" onclick="answerOrder(false)">y좌표</button></div>`);
+function showNotice(text,duration=1700){clearTimeout(S.noticeTimer);$("#boardNotice").textContent=text;$("#boardOverlay").classList.remove("hidden");if(duration>0)S.noticeTimer=setTimeout(()=>$("#boardOverlay").classList.add("hidden"),duration)}
+function hideNotice(){clearTimeout(S.noticeTimer);$("#boardOverlay").classList.add("hidden")}
+
+function miniCoordinateSVG(p){
+  const min=Math.min(-5,p.x-1,p.y-1),max=Math.max(5,p.x+1,p.y+1),size=300,pad=30,step=(size-2*pad)/(max-min);const X=v=>pad+(v-min)*step,Y=v=>pad+(max-v)*step;
+  let lines="";for(let v=Math.ceil(min);v<=Math.floor(max);v++){lines+=`<line x1="${X(v)}" y1="${pad}" x2="${X(v)}" y2="${size-pad}" stroke="${v===0?'#111827':'#dce2ea'}" stroke-width="${v===0?2.4:1}"/><line x1="${pad}" y1="${Y(v)}" x2="${size-pad}" y2="${Y(v)}" stroke="${v===0?'#111827':'#dce2ea'}" stroke-width="${v===0?2.4:1}"/>`;if(v!==0){lines+=`<text x="${X(v)}" y="${Y(0)+16}" text-anchor="middle" font-size="10">${v}</text><text x="${X(0)-7}" y="${Y(v)+3}" text-anchor="end" font-size="10">${v}</text>`}}
+  return `<svg viewBox="0 0 ${size} ${size}" aria-label="점 P가 표시된 좌표평면">${lines}<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="5.5" fill="#111"/><text x="${X(p.x)+8}" y="${Y(p.y)-8}" font-weight="bold">P</text></svg>`;
 }
-window.answerOrder=function(ok){hideModal();if(ok)msg("맞습니다. 순서쌍 (x, y)에서는 가로 위치인 x좌표를 먼저 씁니다.","help");else msg("순서쌍은 x좌표를 먼저, y좌표를 나중에 씁니다. 다시 입력해 보세요.","help")}
-function aiMove(){
-  const c=chooseAI();if(!c){showBoardWin("새 좌표판에서 계속합니다.");return}
-  setStone(c.x,c.y,"ai");state.lastAI={x:c.x,y:c.y};state.question++;state.attempt=0;state.showAnswer=false;
-  let rec=state.records[state.records.length-1];
-  if(!rec||rec.ax!==null) {rec={sx:null,sy:null,ax:c.x,ay:c.y,revealed:false};state.records.push(rec)} else {rec.ax=c.x;rec.ay=c.y}
-  state.phase="read";drawBoard();updateUI();showBoardNotice(`AI가 ${colorName("ai")} 돌을 놓았습니다.\n좌표를 읽어 보세요.`,1800);msg(`AI가 놓은 ${colorName("ai")} 돌의 좌표를 읽어 입력하세요.`,"help");resetInputs();startTimer();
-  if(linesFrom(c.x,c.y,"ai"))state.pendingAIWin=true;
+function miniNumberlineSVG(n){const min=-7,max=7,w=520,h=90,p=25,X=v=>p+(v-min)*(w-2*p)/(max-min);let s=`<svg viewBox="0 0 ${w} ${h}" aria-label="수직선"><line x1="${p-10}" y1="45" x2="${w-p+10}" y2="45" stroke="#111827" stroke-width="2"/><path d="M ${p-10} 45 l 10 -5 v 10 z"/><path d="M ${w-p+10} 45 l -10 -5 v 10 z"/>`;for(let v=min;v<=max;v++)s+=`<line x1="${X(v)}" y1="39" x2="${X(v)}" y2="51" stroke="#111827"/><text x="${X(v)}" y="70" text-anchor="middle" font-size="12">${v}</text>`;s+=`<circle cx="${X(n)}" cy="45" r="6" fill="#2563eb"/><text x="${X(n)}" y="25" text-anchor="middle" font-weight="bold">P</text></svg>`;return s}
+function questionVisual(q){if(q.visual?.kind==="point")return `<div class="mini-visual">${miniCoordinateSVG(q.visual)}</div>`;if(q.visual?.kind==="numberline")return `<div class="mini-visual">${miniNumberlineSVG(q.visual.value)}</div>`;return""}
+
+function renderStudentMove(){
+  S.phase="studentMove";S.currentQuestion=null;S.attempt=0;S.hintUsed=false;stopQuizTimer();startMoveClock();updateUI();
+  const color=colorKorean(S.studentColor);$("#taskArea").innerHTML=`<h2>${escapeHTML(S.name)} 차례: ${color} 돌을 놓을 위치를 순서쌍으로 나타내세요.</h2><div class="coord-inputs"><div class="field"><label for="moveX">x좌표</label><input id="moveX" inputmode="numeric" autocomplete="off"></div><div class="field"><label for="moveY">y좌표</label><input id="moveY" inputmode="numeric" autocomplete="off"></div></div><div id="movePreview" class="preview">선택한 위치: ( , )</div><div class="actions"><button id="moveSubmit" class="primary">이 좌표에 돌 놓기</button></div><div id="taskStatus" class="status">오목판을 클릭하지 말고 x좌표와 y좌표를 입력하세요.</div>`;
+  const update=()=>$("#movePreview").textContent=`선택한 위치: (${$("#moveX").value.trim()||" "}, ${$("#moveY").value.trim()||" "})`;
+  $("#moveX").addEventListener("input",update);$("#moveY").addEventListener("input",update);$("#moveSubmit").addEventListener("click",submitStudentMove);setTimeout(()=>$("#moveX")?.focus(),0)
 }
-function startTimer(){clearInterval(state.timer);state.timeLeft=15;$("#timer").textContent="15초";state.timer=setInterval(()=>{state.timeLeft--;$("#timer").textContent=state.timeLeft+"초";if(state.timeLeft<=0){clearInterval(state.timer);timeoutRead()}},1000)}
-function timeoutRead(){if(state.phase!=="read")return;msg("시간이 끝났습니다. 힌트를 보고 한 번 더 입력하세요.","help");state.attempt=1;state.timeLeft=15;drawBoard();startTimer()}
-function analyzeError(x,y,t){
-  if(x===t.y&&y===t.x){state.orderErrors++;return"x좌표와 y좌표의 순서를 다시 확인하세요. 순서쌍에서는 x좌표를 먼저 씁니다."}
-  const signWrong=(Math.abs(x)===Math.abs(t.x)&&x!==t.x)||(Math.abs(y)===Math.abs(t.y)&&y!==t.y);
-  if(signWrong){state.signErrors++;return"좌표의 숫자뿐 아니라 양수와 음수도 확인하세요. 원점을 기준으로 방향을 살펴보세요."}
-  if(x===t.x&&y!==t.y){state.yErrors++;return"x좌표는 정확하게 읽었습니다. 원점에서 위쪽과 아래쪽 중 어느 방향인지 확인해 보세요."}
-  if(y===t.y&&x!==t.x){state.xErrors++;return"y좌표는 정확하게 읽었습니다. 원점에서 왼쪽과 오른쪽 중 어느 방향인지 확인해 보세요."}
-  state.xErrors++;state.yErrors++;return"먼저 x축에서 가로 위치를 확인한 다음, y축에서 세로 위치를 확인하세요."
+function taskMsg(text,type=""){const e=$("#taskStatus");if(!e)return;e.className=`status ${type}`;e.textContent=text}
+function parsePair(xSel,ySel){const xs=$(xSel).value.trim(),ys=$(ySel).value.trim();if(!xs||!ys)return{error:"x좌표와 y좌표를 모두 입력하세요. 순서쌍은 두 수로 나타냅니다."};const x=Number(xs),y=Number(ys);if(!Number.isInteger(x)||!Number.isInteger(y))return{error:"좌표평면의 눈금에 해당하는 정수를 입력하세요."};return{x,y}}
+function submitStudentMove(){
+  const a=parsePair("#moveX","#moveY");if(a.error)return taskMsg(a.error,"bad");if(a.x<S.min||a.x>S.max||a.y<S.min||a.y>S.max)return taskMsg("현재 좌표평면에 나타난 x좌표와 y좌표의 범위를 확인하세요.","bad");
+  if(getStone(a.x,a.y)){if(a.x!==a.y&&!getStone(a.y,a.x))return showOrderCheck();return taskMsg("이 좌표에는 이미 돌이 있습니다. 다른 좌표를 선택하세요.","bad")}
+  stopMoveClock();putStone(a.x,a.y,"student");S.studentPlacements++;recordStudent(a);drawBoard();showNotice(`(${a.x}, ${a.y})를 사용하여 돌의 위치를 정확하게 전달했습니다.`);updateUI();
+  if(checkFive(a.x,a.y,"student")){S.studentWins++;updateUI();return boardWin(`${S.name}이(가) 좌표를 정확하게 전달하여 오목을 완성했습니다.`)}
+  S.phase="aiThinking";updateUI();$("#taskArea").innerHTML=`<h2>${AI_NAME}이 생각하고 있습니다…</h2><div class="status help">오목 전략과 다음 형성평가 문제를 준비하고 있습니다.</div>`;setTimeout(aiMove,800)
 }
-function readMove(){
-  const r=parseInputs();if(r.error)return msg(r.error,"bad");
-  const t=state.lastAI;
-  if(r.x===t.x&&r.y===t.y){
-    clearInterval(state.timer);const bonus=Math.max(0,Math.min(20,Math.floor((state.timeLeft/15)*20)));
-    if(state.attempt===0){state.correct++;state.score+=100+bonus}else{state.retryCorrect++;state.score+=70+bonus}
-    recordTypeStats(true,t);state.showAnswer=true;state.records[state.records.length-1].revealed=true;
-    drawBoard();updateUI();msg(`정답입니다. x축에서 ${t.x}, y축에서 ${t.y}인 위치이므로 AI 돌의 좌표는 (${t.x}, ${t.y})입니다. 두 수의 순서쌍을 사용하면 돌의 위치를 간단하고 정확하게 나타낼 수 있습니다.`,"ok");
-    setTimeout(finishQuestion,1400);
+function showOrderCheck(){showModal(`<h2>순서쌍의 순서 확인</h2><p>순서쌍에서는 가로 위치와 세로 위치 중 어느 것을 먼저 나타낼까요?</p><div class="actions"><button class="secondary" onclick="answerOrderCheck(true)">x좌표</button><button class="secondary" onclick="answerOrderCheck(false)">y좌표</button></div>`)}
+window.answerOrderCheck=ok=>{hideModal();S.skills.order[ok?"correct":"wrong"]++;if(!ok)S.errorCounts.order++;taskMsg(ok?"맞습니다. 순서쌍 (x, y)에서는 가로 위치인 x좌표를 먼저 씁니다.":"순서쌍은 x좌표를 먼저, y좌표를 나중에 씁니다. 다시 입력해 보세요.",ok?"ok":"help");renderSkills()}
+
+function recordStudent(p){let r=S.records.at(-1);if(!r||r.student){r={turn:S.records.length+1,student:null,ai:null,revealed:false};S.records.push(r)}r.student={...p};renderRecords()}
+function recordAI(p){let r=S.records.at(-1);if(!r||r.ai){r={turn:S.records.length+1,student:null,ai:null,revealed:false};S.records.push(r)}r.ai={...p};r.revealed=false;renderRecords()}
+function revealLatestAI(){const r=[...S.records].reverse().find(r=>r.ai&&!r.revealed);if(r)r.revealed=true;renderRecords()}
+function renderRecords(){$("#recordBody").innerHTML=S.records.map(r=>`<tr><td>${r.turn}</td><td>${r.student?`(${r.student.x}, ${r.student.y})`:"—"}</td><td>${r.ai?(r.revealed?`(${r.ai.x}, ${r.ai.y})`:"?"):"—"}</td></tr>`).join("")}
+
+function checkFive(x,y,p){return [[1,0],[0,1],[1,1],[1,-1]].some(([dx,dy])=>{let c=1;for(const sign of [-1,1]){let nx=x+dx*sign,ny=y+dy*sign;while(getStone(nx,ny)===p){c++;nx+=dx*sign;ny+=dy*sign}}return c>=5})}
+function emptyCells(){const a=[];for(let x=S.min;x<=S.max;x++)for(let y=S.min;y<=S.max;y++)if(!getStone(x,y))a.push({x,y});return a}
+function winningMoves(p){return emptyCells().filter(c=>{putStone(c.x,c.y,p);const w=checkFive(c.x,c.y,p);S.board.delete(key(c.x,c.y));return w})}
+function cellScore(c,p){let score=0;for(const [dx,dy] of [[1,0],[0,1],[1,1],[1,-1]])for(const who of [p,p==="ai"?"student":"ai"]){let count=1;for(const sign of [-1,1]){let nx=c.x+dx*sign,ny=c.y+dy*sign;while(getStone(nx,ny)===who){count++;nx+=dx*sign;ny+=dy*sign}}score+=(who===p?7:5)*count*count}const near=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].filter(([dx,dy])=>getStone(c.x+dx,c.y+dy)).length;return score+near*4+Math.random()*5}
+function chooseAI(){let c=winningMoves("ai");if(c.length)return rand(c);c=winningMoves("student");if(c.length)return rand(c);let cells=emptyCells();const target=S.aiTargetTypes[S.questionNo]||"Q1",typed=cells.filter(x=>coordType(x)===target);if(typed.length)cells=typed;cells.sort((a,b)=>cellScore(b,"ai")-cellScore(a,"ai"));return rand(cells.slice(0,Math.min(5,cells.length)))||emptyCells()[0]}
+function aiMove(){const p=chooseAI();if(!p)return boardWin("좌표판이 가득 차 새 좌표판에서 계속합니다.");putStone(p.x,p.y,"ai");S.lastAI={...p};recordAI(p);S.pendingAIWin=checkFive(p.x,p.y,"ai");drawBoard();showNotice(`${AI_NAME}이 ${colorKorean(S.aiColor)} 돌을 놓았습니다.\n좌표는 문제를 해결한 뒤 공개됩니다.`,1900);startMission(p)}
+
+function renderMission(q){
+  S.phase="mission";S.currentQuestion=q;S.attempt=0;S.hintUsed=false;q.revealed=false;S.questionNo++;S.questionHistory.push(q);updateUI();drawBoard();
+  let answerUI="";
+  if(q.format==="pair")answerUI=`<div class="coord-inputs"><div class="field"><label for="ansX">x좌표</label><input id="ansX" inputmode="numeric" autocomplete="off"></div><div class="field"><label for="ansY">y좌표</label><input id="ansY" inputmode="numeric" autocomplete="off"></div></div><div id="answerPreview" class="preview">내가 쓴 순서쌍: ( , )</div>`;
+  else if(q.format==="number")answerUI=`<div class="field"><label for="ansNumber">답</label><input id="ansNumber" inputmode="numeric" autocomplete="off"></div>`;
+  else answerUI=`<div class="choices">${q.choices.map((c,i)=>`<label class="choice"><input type="radio" name="choice" value="${escapeHTML(c)}"> <span>${i+1}. ${escapeHTML(c)}</span></label>`).join("")}</div>`;
+  $("#taskArea").innerHTML=`<div class="problem-number">적응형 형성평가 ${String(S.questionNo).padStart(2,"0")}</div><div class="problem-prompt">${escapeHTML(q.prompt)}</div>${questionVisual(q)}${answerUI}<div class="actions"><button id="answerSubmit" class="primary">좌표 문제 확인하기</button><button id="hintBtn" class="hint-btn">힌트 사용: 20점 차감</button></div><div id="hintPanel" class="hint-panel hidden"></div><div id="taskStatus" class="status">정답을 확인하기 전에는 답이 공개되지 않습니다.</div>`;
+  if(q.format==="pair"){const up=()=>$("#answerPreview").textContent=`내가 쓴 순서쌍: (${$("#ansX").value.trim()||" "}, ${$("#ansY").value.trim()||" "})`;$("#ansX").addEventListener("input",up);$("#ansY").addEventListener("input",up)}
+  $("#answerSubmit").addEventListener("click",submitMissionAnswer);$("#hintBtn").addEventListener("click",buyHint);startQuizTimer();setTimeout(()=>$(q.format==="pair"?"#ansX":q.format==="number"?"#ansNumber":'input[name="choice"]')?.focus(),0)
+}
+function startMission(aiCoord){const q=chooseAdaptiveQuestion(aiCoord);renderMission(q)}
+function readAnswer(q){if(q.format==="pair"){const a=parsePair("#ansX","#ansY");return a.error?{error:a.error}:a}if(q.format==="number"){const s=$("#ansNumber").value.trim();if(!s)return{error:"답을 입력하세요."};const n=Number(s);if(!Number.isFinite(n))return{error:"숫자로 입력하세요."};return{value:n}}const v=document.querySelector('input[name="choice"]:checked')?.value;return v?{value:v}:{error:"선택지 중 하나를 선택하세요."}}
+function answerCorrect(q,a){if(q.format==="pair")return a.x===q.target.x&&a.y===q.target.y;return a.value===q.answer}
+function expectedText(q){if(q.format==="pair")return`(${q.target.x}, ${q.target.y})`;return String(q.answer)}
+function analyzePair(a,t){
+  if(a.x===t.y&&a.y===t.x&&t.x!==t.y){S.errorCounts.order++;return{skill:"order",text:"x좌표와 y좌표의 순서를 다시 확인하세요. 순서쌍에서는 x좌표를 먼저 씁니다."}}
+  if((Math.abs(a.x)===Math.abs(t.x)&&a.x!==t.x)||(Math.abs(a.y)===Math.abs(t.y)&&a.y!==t.y)){S.errorCounts.sign++;return{skill:"sign",text:"숫자의 크기뿐 아니라 양수와 음수의 부호도 확인하세요. 원점을 기준으로 방향을 살펴보세요."}}
+  if(a.x===t.x&&a.y!==t.y){S.errorCounts.y++;return{skill:"y",text:"x좌표는 정확합니다. y좌표가 원점의 위쪽인지 아래쪽인지 확인하세요."}}
+  if(a.y===t.y&&a.x!==t.x){S.errorCounts.x++;return{skill:"x",text:"y좌표는 정확합니다. x좌표가 원점의 왼쪽인지 오른쪽인지 확인하세요."}}
+  S.errorCounts.x++;S.errorCounts.y++;return{skill:"read",text:"먼저 x축에서 가로 위치를 확인한 다음, y축에서 세로 위치를 확인하세요."}
+}
+function wrongFeedback(q,a){if(q.format==="pair")return analyzePair(a,q.target);const skill=q.skills[0]||"reason";if(q.type==="quadrant"||q.type==="signQuadrant")return{skill:"quadrant",text:"x좌표와 y좌표의 부호를 사분면의 위치와 연결해 보세요."};if(q.type==="numberline")return{skill:"numberline",text:"0을 기준으로 왼쪽은 음수, 오른쪽은 양수입니다."};if(q.type==="area")return{skill:"area",text:"좌표의 차로 가로와 세로 길이를 먼저 구하세요."};return{skill,text:q.hint}}
+function updateTypeStats(q,ok){let t=q.target;if(q.type==="aiRead")t=S.lastAI;if(t&&typeof t.x==="number"){if(t.x<0||t.y<0){S.typeStats.negative.t++;if(ok)S.typeStats.negative.c++}if(t.x===0||t.y===0){S.typeStats.axis.t++;if(ok)S.typeStats.axis.c++}if(t.x===0&&t.y===0){S.typeStats.origin.t++;if(ok)S.typeStats.origin.c++}}}
+function submitMissionAnswer(){
+  const q=S.currentQuestion,a=readAnswer(q);if(a.error)return taskMsg(a.error,"bad");
+  if(answerCorrect(q,a)){
+    stopQuizTimer();const base=S.attempt===0&&!S.hintUsed?100:70,bonus=Math.min(20,Math.max(0,Math.floor(S.quizTime/3)));S.score+=base+bonus;
+    if(S.attempt===0&&!S.hintUsed)S.firstCorrect++;else S.retryCorrect++;
+    q.skills.forEach(s=>S.skills[s].correct++);updateTypeStats(q,true);q.revealed=true;revealLatestAI();drawBoard();updateUI();
+    taskMsg(`정답입니다. 답은 ${expectedText(q)}입니다. ${explainQuestion(q)}` ,"ok");setTimeout(finishMission,1500)
   }else{
-    if(state.attempt===0){
-      state.attempt=1;msg(analyzeError(r.x,r.y,t)+" 점선을 따라 다시 확인해 보세요.","help");drawBoard();resetInputs();
-    }else{
-      clearInterval(state.timer);state.wrong++;recordTypeStats(false,t);state.showAnswer=true;state.records[state.records.length-1].revealed=true;drawBoard();updateUI();
-      msg(`AI 돌은 원점에서 가로로 ${Math.abs(t.x)}만큼, 세로로 ${Math.abs(t.y)}만큼 이동한 위치에 있습니다. 따라서 좌표는 (${t.x}, ${t.y})입니다.`,"bad");
-      setTimeout(finishQuestion,1700);
-    }
+    const f=wrongFeedback(q,a);S.skills[f.skill].wrong++;renderSkills();
+    if(S.attempt===0){S.attempt=1;taskMsg(`${f.text} 한 번 더 생각해 보세요. 필요하면 점수를 사용해 힌트를 볼 수 있습니다.`,"help");drawBoard()}
+    else{stopQuizTimer();S.wrong++;q.skills.forEach(s=>{if(s!==f.skill)S.skills[s].wrong+=.25});updateTypeStats(q,false);q.revealed=true;revealLatestAI();drawBoard();updateUI();taskMsg(`두 번째 시도도 아쉽습니다. 정답은 ${expectedText(q)}입니다. ${explainQuestion(q)}`,"bad");setTimeout(finishMission,1800)}
   }
 }
-function recordTypeStats(ok,t){
-  if(t.x===0||t.y===0){state.axisStats.total++;if(ok)state.axisStats.correct++}
-  if(t.x===0&&t.y===0){state.originStats.asked=true;if(ok)state.originStats.correct=true}
-  if(t.x<0||t.y<0){state.negativeStats.total++;if(ok)state.negativeStats.correct++}
+function explainQuestion(q){
+  if(q.format==="pair")return`순서쌍에서는 가로 위치인 x좌표를 먼저, 세로 위치인 y좌표를 나중에 씁니다.`;
+  if(q.type==="quadrant"||q.type==="signQuadrant")return`좌표의 부호와 축 위 여부를 차례로 확인하면 위치를 판단할 수 있습니다.`;
+  if(q.type==="numberline")return`0의 왼쪽은 음수, 오른쪽은 양수입니다.`;
+  if(q.type==="area")return`가로 길이와 세로 길이를 좌표의 차로 구해 곱합니다.`;
+  if(q.type==="utility")return`좌표는 두 수만으로 위치를 짧고 정확하게 전달합니다.`;
+  return`좌표의 정의와 순서쌍 (x, y)의 순서를 확인하세요.`
 }
-function finishQuestion(){
-  if(state.pendingAIWin){state.pendingAIWin=false;state.aiWins++;updateUI();showBoardWin("AI가 오목을 완성했습니다. 새로운 좌표판에서 다시 도전합니다.");return}
-  if(state.question===5&&!state.convenienceShown){state.convenienceShown=true;showConvenience();return}
-  if(state.question>=state.total){showReflection();return}
-  state.phase="student";state.showAnswer=false;drawBoard();updateUI();msg(`다음 ${colorName("student")} 돌의 위치를 순서쌍으로 입력하세요.`);resetInputs();startStudentMoveClock()
+function buyHint(){if(S.hintUsed)return taskMsg("이 문제에서는 이미 힌트를 사용했습니다.","help");S.hintUsed=true;let costText;if(S.score>0){const used=Math.min(20,S.score);S.score-=used;costText=`누적점수 ${used}점이 차감되었습니다.`}else{deductMoveTime(30);costText="누적점수가 0점이므로 학생 착수시간 30초가 차감되었습니다."}$("#hintPanel").classList.remove("hidden");$("#hintPanel").textContent=`${costText} 힌트: ${S.currentQuestion.hint}`;$("#hintBtn").disabled=true;drawBoard();updateUI()}
+function deductMoveTime(sec){if(S.mainTime>0)S.mainTime=Math.max(0,S.mainTime-sec);else S.nextByoPenalty=Math.min(45,S.nextByoPenalty+sec);updateMoveTimeUI()}
+function startQuizTimer(){stopQuizTimer();S.quizTime=15;updateUI();S.quizTimer=setInterval(()=>{S.quizTime--;updateUI();if(S.quizTime<=0){stopQuizTimer();quizTimeout()}},1000)}
+function stopQuizTimer(){clearInterval(S.quizTimer);S.quizTimer=null}
+function quizTimeout(){if(S.phase!=="mission")return;if(S.attempt===0){S.attempt=1;taskMsg("15초가 지났습니다. 정답은 공개하지 않습니다. 한 번 더 확인하거나 힌트를 사용하세요.","help");S.quizTime=15;startQuizTimer();drawBoard()}else{S.wrong++;S.currentQuestion.skills.forEach(s=>S.skills[s].wrong++);updateTypeStats(S.currentQuestion,false);S.currentQuestion.revealed=true;revealLatestAI();drawBoard();updateUI();taskMsg(`두 번째 제한 시간도 지났습니다. 정답은 ${expectedText(S.currentQuestion)}입니다. ${explainQuestion(S.currentQuestion)}`,"bad");setTimeout(finishMission,1800)}}
+function finishMission(){
+  stopQuizTimer();if(S.pendingAIWin){S.pendingAIWin=false;S.aiWins++;updateUI();return boardWin(`${AI_NAME}이 오목을 완성했습니다. 새로운 좌표판에서 다시 도전합니다.`)}
+  if(S.questionNo===5&&!S.convenienceShown){S.convenienceShown=true;return showConvenienceActivity()}
+  if(S.questionNo>=S.totalQuestions)return showReflection();renderStudentMove()
 }
-function showBoardWin(text){
-  clearInterval(state.timer);stopMoveClock();showModal(`<h2>오목 완성</h2><p>${text}</p><button class="primary" onclick="continueBoard()">새 좌표판에서 계속하기</button>`)
+
+function stopMoveClock(){clearInterval(S.moveTimer);S.moveTimer=null}
+function startMoveClock(){stopMoveClock();if(S.phase!=="studentMove")return;if(S.mainTime>0){S.inByo=false;S.moveTime=S.mainTime}else{S.inByo=true;S.moveTime=Math.max(15,60-S.nextByoPenalty);S.nextByoPenalty=0}updateMoveTimeUI();S.moveTimer=setInterval(()=>{if(S.phase!=="studentMove")return stopMoveClock();S.moveTime--;if(!S.inByo)S.mainTime=S.moveTime;updateMoveTimeUI();if(S.moveTime<=0){stopMoveClock();if(!S.inByo){S.mainTime=0;showNotice("기본 시간이 끝났습니다. 60초 초읽기를 시작합니다.",2200);startMoveClock()}else consumeByo()}},1000)}
+function updateMoveTimeUI(){$("#moveTime").textContent=S.inByo?`초읽기 ${S.moveTime}초`:`기본 ${fmt(S.mainTime)}`;$("#byo").textContent=`${S.byoRemaining}회`}
+function consumeByo(){S.byoRemaining--;updateMoveTimeUI();if(S.byoRemaining<=0)return timeForfeit();showNotice(`시간 초과! 초읽기 기회 1회 차감\n남은 기회 ${S.byoRemaining}회`,2400);S.inByo=true;S.moveTime=60;startMoveClock()}
+function timeForfeit(){stopMoveClock();S.aiWins++;updateUI();showNotice("초읽기 기회를 모두 사용하여 시간패했습니다.",0);showModal(`<h2>시간패(기권패)</h2><p>모든 초읽기 기회를 사용하기 전까지 착수하지 못했습니다.</p><button class="primary" onclick="continueNewBoard()">새 좌표판에서 계속하기</button>`)}
+
+function boardWin(text){stopMoveClock();stopQuizTimer();showNotice(text,0);showModal(`<h2>오목 완성</h2><p>${escapeHTML(text)}</p><button class="primary" onclick="continueNewBoard()">새 좌표판에서 계속하기</button>`)}
+window.continueNewBoard=()=>{hideModal();S.board=new Map();S.lastAI=null;S.byoRemaining=3;S.mainTime=180;S.inByo=false;hideNotice();drawBoard();if(S.questionNo>=S.totalQuestions)showReflection();else beginByFirstPlayer()}
+function beginByFirstPlayer(){if(S.firstPlayer==="student")renderStudentMove();else{S.phase="aiThinking";updateUI();$("#taskArea").innerHTML=`<h2>${AI_NAME} 선공</h2><div class="status help">${AI_NAME}이 첫 돌을 고르고 있습니다.</div>`;setTimeout(aiMove,700)}}
+
+function showDiceSetup(){
+  S.phase="setup";updateUI();showNotice("주사위 숫자가 큰 쪽이 선공과 돌 색을 결정합니다.",0);
+  showModal(`<h2>주사위로 순서와 돌 색 정하기</h2><p>${escapeHTML(S.name)}과 ${AI_NAME}이 주사위를 던집니다. 큰 숫자가 나온 쪽이 선공과 돌 색을 결정합니다.</p><div class="dice-grid"><div class="dice-box"><b>${escapeHTML(S.name)}</b><div id="studentDie" class="die">⚀</div><div id="studentRoll">-</div></div><div class="dice-box"><b>${AI_NAME}</b><div id="aiDie" class="die">⚀</div><div id="aiRoll">-</div></div></div><button id="rollBtn" class="primary">주사위 던지기</button><div id="diceResult" class="rule-note hidden"></div>`);$("#rollBtn").addEventListener("click",rollDice)
 }
-window.continueBoard=function(){hideModal();clearBoard();if(state.question>=state.total)showReflection();else beginNextTurn()}
-function beginNextTurn(){
-  state.showAnswer=false;
-  if(state.firstPlayer==="ai" && state.board.size===0){state.phase="ai";updateUI();showBoardNotice("AI가 먼저 시작합니다.",900);setTimeout(aiMove,800)}
-  else{state.phase="student";updateUI();showBoardNotice(`${state.name} 학생 차례입니다.\n순서쌍으로 위치를 전달하세요.`,1800);msg(`${colorName("student")} 돌을 놓을 위치를 입력하세요.`);resetInputs();startStudentMoveClock()}
-}
-function dieFace(n){return ["","⚀","⚁","⚂","⚃","⚄","⚅"][n]}
-function startDiceSetup(){
-  state.phase="setup";updateUI();showBoardNotice("주사위를 던져\n선공과 돌 색을 정합니다.",0);
-  showModal(`<h2>주사위로 순서와 돌 색 정하기</h2><p>학생과 AI가 주사위를 던집니다. 더 큰 수가 나온 쪽이 선공과 돌 색을 모두 결정합니다.</p><div class="rule-note">착수 기본시간은 3분입니다. 기본시간이 끝나면 매 착수마다 60초 초읽기가 적용되며, 기회는 3회입니다.</div><div class="dice-row"><div class="dice-box"><b>${state.name}</b><div id="studentDie" class="die">–</div></div><div class="dice-box"><b>AI</b><div id="aiDie" class="die">–</div></div></div><button class="primary" onclick="rollDice()">주사위 던지기</button>`)
-}
-window.rollDice=function(){
-  const sd=1+Math.floor(Math.random()*6),ad=1+Math.floor(Math.random()*6);$("#studentDie").textContent=dieFace(sd)+" "+sd;$("#aiDie").textContent=dieFace(ad)+" "+ad;
-  if(sd===ad){showBoardNotice(`주사위 결과 ${sd} : ${ad}\n동점이므로 다시 던집니다.`,1800);setTimeout(rollDice,1200);return}
-  state.diceWinner=sd>ad?"student":"ai";showBoardNotice(`주사위 결과 ${sd} : ${ad}\n${state.diceWinner==="student"?state.name:"AI"} 승리!`,1800);
-  setTimeout(()=>state.diceWinner==="student"?showStudentChoice():makeAIChoice(),900)
-}
-function showStudentChoice(){
-  showModal(`<h2>학생이 결정합니다</h2><p>주사위에서 이겼습니다. 선공 여부와 돌 색을 선택하세요.</p><div class="form-grid"><div class="field"><label>순서</label><select id="firstChoice"><option value="student">내가 먼저 시작</option><option value="ai">AI가 먼저 시작</option></select></div><div class="field"><label>내 돌 색</label><select id="colorChoice"><option value="black">검은색</option><option value="white">흰색</option></select></div></div><button class="primary" style="margin-top:14px" onclick="confirmStudentChoice()">선택 완료</button>`)
-}
-window.confirmStudentChoice=function(){state.firstPlayer=$("#firstChoice").value;state.studentColor=$("#colorChoice").value;state.aiColor=state.studentColor==="black"?"white":"black";finishSetup()}
-function makeAIChoice(){
-  state.firstPlayer=Math.random()<.5?"ai":"student";state.aiColor=Math.random()<.5?"black":"white";state.studentColor=state.aiColor==="black"?"white":"black";
-  showModal(`<h2>AI가 결정했습니다</h2><p>AI는 <b>${state.firstPlayer==="ai"?"먼저":"나중에"}</b> 두고, <b>${colorName("ai")} 돌</b>을 선택했습니다.</p><p>${state.name} 학생은 <b>${state.firstPlayer==="student"?"먼저":"나중에"}</b> 두며, <b>${colorName("student")} 돌</b>을 사용합니다.</p><button class="primary" onclick="finishSetup()">게임 시작</button>`)
-}
-window.finishSetup=function(){hideModal();state.boardNotice="";drawBoard();beginNextTurn()}
-function showConvenience(){
-  showModal(`<h2>좌표의 편리함 비교</h2><p><b>설명 A</b><br>중앙에서 오른쪽으로 세 칸 이동하고, 위쪽으로 두 칸 이동한 위치</p><p><b>설명 B</b><br>(3, 2)</p>
-  <p>두 사람이 같은 위치를 빠르고 정확하게 전달하려면 어떤 방법이 더 편리할까요?</p>
-  <div class="options">
-    <label class="option"><input type="radio" name="conv" value="sentence"> 방향을 문장으로 설명하는 방법</label>
-    <label class="option"><input type="radio" name="conv" value="pair"> 순서쌍으로 나타내는 방법</label>
-  </div><button class="primary" onclick="submitConvenience()">확인하기</button><div id="convFb" class="feedback hidden"></div>`)
-}
-window.submitConvenience=function(){
-  const v=document.querySelector('input[name="conv"]:checked')?.value;if(!v)return;
-  state.convenienceCorrect=v==="pair";const fb=$("#convFb");fb.classList.remove("hidden");
-  fb.textContent=state.convenienceCorrect?"맞습니다. 좌표를 사용하면 긴 설명 없이 두 수만으로 위치를 정확하게 전달할 수 있습니다.":"문장으로도 위치를 설명할 수 있지만, 좌표를 사용하면 더 짧고 정확하게 나타낼 수 있습니다.";
-  setTimeout(()=>{hideModal();finishQuestion()},1000)
-}
-function showReflection(){
-  clearInterval(state.timer);stopMoveClock();showModal(`<h2>최종 성찰 문항</h2>
-  <p><b>문항 1.</b> 오목돌의 위치를 나타낼 때 좌표를 사용하면 좋은 점은 무엇인가요?</p>
-  <div class="options">
-    ${["위치를 두 수로 간단하고 정확하게 나타낼 수 있다.","돌의 색을 더 잘 구별할 수 있다.","오목판의 크기를 자유롭게 바꿀 수 있다.","AI가 항상 같은 곳에 돌을 놓게 할 수 있다."].map((t,i)=>`<label class="option"><input type="radio" name="r1" value="${i}"> ${t}</label>`).join("")}
-  </div>
-  <p><b>문항 2.</b> 순서쌍 (x, y)에서 먼저 쓰는 수는 <input id="r2x" style="width:80px">좌표이고, 나중에 쓰는 수는 <input id="r2y" style="width:80px">좌표이다.</p>
-  <p><b>문항 3.</b> 좌표가 없었다면 AI에게 돌을 놓을 위치를 어떻게 설명해야 했을지 한 문장으로 적어보세요.</p>
-  <textarea id="r3" rows="3"></textarea><button class="primary" onclick="submitReflection()">결과 보기</button>`)
-}
-window.submitReflection=function(){
-  state.reflection.q1=document.querySelector('input[name="r1"]:checked')?.value==="0";
-  state.reflection.q2x=$("#r2x").value.trim().toLowerCase();state.reflection.q2y=$("#r2y").value.trim().toLowerCase();state.reflection.q3=$("#r3").value.trim();
-  hideModal();showResults()
-}
+function dieFace(n){return["","⚀","⚁","⚂","⚃","⚄","⚅"][n]}
+function rollDice(){const s=1+Math.floor(Math.random()*6),a=1+Math.floor(Math.random()*6);$("#studentDie").textContent=dieFace(s);$("#aiDie").textContent=dieFace(a);$("#studentRoll").textContent=`${s}`;$("#aiRoll").textContent=`${a}`;const r=$("#diceResult");r.classList.remove("hidden");if(s===a){r.textContent="같은 수가 나왔습니다. 다시 던집니다.";return}$("#rollBtn").disabled=true;if(s>a){S.diceWinner="student";r.innerHTML=`${escapeHTML(S.name)}의 숫자가 더 큽니다. 선공과 돌 색을 선택하세요.<div class="form-grid" style="margin-top:10px"><div class="field"><label>순서</label><select id="pickFirst"><option value="student">내가 먼저 시작</option><option value="ai">숫AI돌이 먼저 시작</option></select></div><div class="field"><label>내 돌 색</label><select id="pickColor"><option value="black">검은색</option><option value="white">흰색</option></select></div></div><button class="primary" style="margin-top:10px" onclick="confirmStudentChoice()">선택 완료</button>`}else{S.diceWinner="ai";S.firstPlayer=Math.random()<.5?"ai":"student";S.aiColor=Math.random()<.5?"black":"white";S.studentColor=S.aiColor==="black"?"white":"black";r.innerHTML=`${AI_NAME}의 숫자가 더 큽니다. ${AI_NAME}은(는) <b>${S.firstPlayer==="ai"?"선공":"후공"}</b>과 <b>${colorKorean(S.aiColor)} 돌</b>을 선택했습니다.<br><button class="primary" style="margin-top:10px" onclick="finishDiceSetup()">대결 시작</button>`}}
+window.confirmStudentChoice=()=>{S.firstPlayer=$("#pickFirst").value;S.studentColor=$("#pickColor").value;S.aiColor=S.studentColor==="black"?"white":"black";finishDiceSetup()}
+window.finishDiceSetup=()=>{hideModal();hideNotice();updatePlayerLabels();drawBoard();showNotice(`${S.firstPlayer==="student"?S.name:AI_NAME} 선공 · ${S.name} ${colorKorean(S.studentColor)} 돌`,1800);setTimeout(beginByFirstPlayer,800)}
+
+function showConvenienceActivity(){showModal(`<h2>중간 활동: 좌표의 편리함</h2><p><b>설명 A</b><br>중앙에서 오른쪽으로 세 칸 이동하고, 위쪽으로 두 칸 이동한 위치</p><p><b>설명 B</b><br>(3, 2)</p><p>같은 위치를 빠르고 정확하게 전달하려면 어느 방법이 더 편리할까요?</p><div class="modal-options"><label class="modal-option"><input type="radio" name="conv" value="sentence"> 방향을 문장으로 설명하는 방법</label><label class="modal-option"><input type="radio" name="conv" value="pair"> 순서쌍으로 나타내는 방법</label></div><button class="primary" onclick="submitConvenience()">확인하기</button><div id="convFeedback" class="status hidden"></div>`)}
+window.submitConvenience=()=>{const v=document.querySelector('input[name="conv"]:checked')?.value;if(!v)return;S.convenienceCorrect=v==="pair";S.skills.utility[S.convenienceCorrect?"correct":"wrong"]++;const f=$("#convFeedback");f.classList.remove("hidden");f.classList.add(S.convenienceCorrect?"ok":"help");f.textContent=S.convenienceCorrect?"맞습니다. 좌표를 사용하면 긴 설명 없이 두 수만으로 위치를 정확하게 전달할 수 있습니다.":"문장으로도 설명할 수 있지만, 좌표를 사용하면 더 짧고 정확하게 나타낼 수 있습니다.";setTimeout(()=>{hideModal();finishMission()},1200)}
+
+function showReflection(){stopMoveClock();stopQuizTimer();showModal(`<h2>최종 성찰 문항</h2><p><b>1.</b> 오목돌의 위치를 나타낼 때 좌표를 사용하면 좋은 점은 무엇인가요?</p><div class="modal-options">${["위치를 두 수로 간단하고 정확하게 나타낼 수 있다.","돌의 색을 더 잘 구별할 수 있다.","오목판의 크기를 자유롭게 바꿀 수 있다.","숫AI돌이 항상 같은 곳에 돌을 놓게 할 수 있다."].map((x,i)=>`<label class="modal-option"><input type="radio" name="reflect1" value="${i}"> ${x}</label>`).join("")}</div><p><b>2.</b> 순서쌍 (x, y)에서 먼저 쓰는 수는 <input id="reflectX" style="width:80px">좌표이고, 나중에 쓰는 수는 <input id="reflectY" style="width:80px">좌표이다.</p><p><b>3.</b> 좌표가 없었다면 돌을 놓을 위치를 어떻게 설명해야 했을지 한 문장으로 적어 보세요.</p><textarea id="reflectText" rows="3"></textarea><button class="primary" onclick="submitReflection()">결과 보기</button>`)}
+window.submitReflection=()=>{S.reflection.q1=document.querySelector('input[name="reflect1"]:checked')?.value==="0";S.reflection.q2x=$("#reflectX").value.trim().toLowerCase();S.reflection.q2y=$("#reflectY").value.trim().toLowerCase();S.reflection.q3=$("#reflectText").value.trim();hideModal();showResults()}
+
+function skillRate(k){const d=S.skills[k],t=d.correct+d.wrong;return t?Math.round(d.correct/t*100):0}
+function renderSkills(){const ranked=ALL_SKILLS.map(k=>({k,rate:skillRate(k),seen:S.skills[k].correct+S.skills[k].wrong})).filter(x=>x.seen>0).sort((a,b)=>a.rate-b.rate).slice(0,7);$("#skillBars").innerHTML=ranked.length?ranked.map(x=>`<div class="skill-row"><span>${SKILL_LABELS[x.k]}</span><div class="skill-bar"><div class="skill-fill" style="width:${x.rate}%"></div></div><b>${x.rate}%</b></div>`).join(""):`<p style="color:var(--muted);font-size:.84rem">문제를 풀면 영역별 분석이 표시됩니다.</p>`}
 function showResults(){
-  $("#gameScreen").classList.add("hidden");$("#resultScreen").classList.remove("hidden");
-  const first=state.correct,total=state.total,accuracy=Math.round(((state.correct+state.retryCorrect)/total)*100);
-  const orderOK=state.orderErrors===0&&state.reflection.q2x==="x"&&state.reflection.q2y==="y";
-  const convenience=state.convenienceCorrect===true&&state.reflection.q1===true;
-  let level,feedback;
-  if(accuracy>=90&&orderOK&&convenience){level="매우 잘함";feedback="순서쌍을 사용하여 위치를 정확하게 나타내고, 좌표를 이용하면 위치를 간단하고 편리하게 전달할 수 있다는 점을 잘 이해했습니다."}
-  else if(accuracy>=70){level="잘함";feedback="순서쌍과 좌표를 대체로 잘 이해하고 있습니다. x좌표와 y좌표의 순서와 음수의 방향을 조금 더 확인해 보세요."}
-  else{level="연습 필요";feedback="먼저 x축에서 가로 위치를 찾고, 다음으로 y축에서 세로 위치를 확인하는 연습이 필요합니다. 순서쌍은 항상 (x, y)의 순서로 나타냅니다."}
-  state.final={accuracy,orderOK,convenience,level,feedback};
-  $("#resultSummary").innerHTML=[
-    ["학생 이름",state.name],["난이도",$("#difficulty option:checked").textContent],["최종 점수",state.score],
-    ["첫 시도 정답",state.correct],["재도전 정답",state.retryCorrect],["오답",state.wrong],["정답률",accuracy+"%"],
-    ["x좌표 오류",state.xErrors],["y좌표 오류",state.yErrors],["순서 오류",state.orderErrors],["부호 오류",state.signErrors],
-    ["학생 돌 색",colorName("student")+"색"],["선공",state.firstPlayer==="student"?"학생":"AI"],["학생 승리",state.studentWins],["AI 승리",state.aiWins],["좌표 편리함 이해",convenience?"이해함":"추가 확인 필요"]
-  ].map(([a,b])=>`<div class="result-box"><b>${a}</b><div>${b}</div></div>`).join("");
-  $("#achievementFeedback").innerHTML=`<h3>성취수준: ${level}</h3><p>${feedback}</p>`;
-  localStorage.setItem("coordinateOmokResult",JSON.stringify({...state,board:undefined,timer:undefined}));
+  $("#gameScreen").classList.add("hidden");$("#resultScreen").classList.remove("hidden");const solved=S.firstCorrect+S.retryCorrect,accuracy=Math.round(solved/S.totalQuestions*100),orderOK=S.reflection.q2x==="x"&&S.reflection.q2y==="y"&&S.errorCounts.order===0,utilityOK=S.convenienceCorrect===true&&S.reflection.q1;
+  let level,feedback;if(accuracy>=90&&orderOK&&utilityOK){level="매우 잘함";feedback="순서쌍을 사용하여 위치를 정확하게 나타내고, 좌표를 이용하면 위치를 간단하고 편리하게 전달할 수 있다는 점을 잘 이해했습니다."}else if(accuracy>=70){level="잘함";feedback="순서쌍과 좌표를 대체로 잘 이해하고 있습니다. x좌표와 y좌표의 순서와 음수의 방향을 조금 더 확인해 보세요."}else{level="연습 필요";feedback="먼저 x축에서 가로 위치를 찾고, 다음으로 y축에서 세로 위치를 확인하는 연습이 필요합니다. 순서쌍은 항상 (x, y)의 순서로 나타냅니다."}
+  const observed=ALL_SKILLS.map(k=>({k,rate:skillRate(k),n:S.skills[k].correct+S.skills[k].wrong})).filter(x=>x.n>0).sort((a,b)=>a.rate-b.rate),weak=observed.slice(0,3),strong=[...observed].sort((a,b)=>b.rate-a.rate).slice(0,3);S.final={accuracy,orderOK,utilityOK,level,feedback,weak,strong};
+  const diff={basic:"기초",standard:"기본",challenge:"도전"}[S.difficulty];const data=[["학생 이름",S.name],["난이도",diff],["최종 점수",S.score],["첫 시도 정답",S.firstCorrect],["재도전 정답",S.retryCorrect],["오답",S.wrong],["정답률",`${accuracy}%`],["x좌표 오류",S.errorCounts.x],["y좌표 오류",S.errorCounts.y],["순서 오류",S.errorCounts.order],["부호 오류",S.errorCounts.sign],["학생 오목 승리",S.studentWins],[`${AI_NAME} 승리`,S.aiWins],["좌표 편리함",utilityOK?"이해함":"추가 확인 필요"]];$("#resultGrid").innerHTML=data.map(([a,b])=>`<div class="result-box"><b>${a}</b><div>${b}</div></div>`).join("");$("#achievement").innerHTML=`<h3>성취수준: ${level}</h3><p>${feedback}</p>`;$("#adaptiveFeedback").innerHTML=`<h3>적응형 학습 분석</h3><p><b>강점:</b> ${strong.length?strong.map(x=>`${SKILL_LABELS[x.k]} ${x.rate}%`).join(", "):"자료 부족"}</p><p><b>다음 연습 영역:</b> ${weak.length?weak.map(x=>`${SKILL_LABELS[x.k]} ${x.rate}%`).join(", "):"자료 부족"}</p><p>${weak.length?`${SKILL_LABELS[weak[0].k]} 영역의 문제를 먼저 복습하면 성취수준 향상에 도움이 됩니다.`:"여러 유형을 고르게 연습했습니다."}</p>`;
+  const save={date:new Date().toISOString(),name:S.name,difficulty:diff,score:S.score,accuracy,level,skills:S.skills,errors:S.errorCounts,reflection:S.reflection};localStorage.setItem("coordinateOmokFinalResult",JSON.stringify(save));window.scrollTo({top:0,behavior:"smooth"})
 }
-function teacherTable(){
-  const neg=state.negativeStats.total?Math.round(state.negativeStats.correct/state.negativeStats.total*100):0;
-  const axis=state.axisStats.total?Math.round(state.axisStats.correct/state.axisStats.total*100):0;
-  return [
-    ["주어진 순서쌍의 위치에 돌 놓기",`${state.studentPlacements}회 성공`],
-    ["좌표평면에서 AI 돌의 좌표 읽기",`${state.correct+state.retryCorrect}개 정답`],
-    ["x좌표와 y좌표 순서 이해",state.final.orderOK?"이해":"추가 지도 필요"],
-    ["음수 좌표 이해",`${neg}%`],["축 위의 점 이해",`${axis}%`],
-    ["원점 이해",state.originStats.asked?(state.originStats.correct?"정답":"오답"):"미출제"],
-    ["좌표의 유용성과 편리함 인식",state.final.convenience?"이해":"추가 확인 필요"]
-  ]
+function pct(o){return o.t?`${Math.round(o.c/o.t*100)}%`:"미출제"}
+function teacherRows(){return[["주어진 순서쌍의 위치에 돌 놓기",`${S.studentPlacements}회 성공`],["좌표평면에서 점의 좌표 읽기",`${S.firstCorrect+S.retryCorrect}문제 정답`],["x좌표와 y좌표 순서 이해",S.final.orderOK?"이해":"추가 지도 필요"],["음수 좌표 이해",pct(S.typeStats.negative)],["축 위의 점 이해",pct(S.typeStats.axis)],["원점 이해",pct(S.typeStats.origin)],["좌표의 유용성과 편리함 인식",S.final.utilityOK?"이해":"추가 확인 필요"],["적응형 우선 복습 영역",S.final.weak.map(x=>SKILL_LABELS[x.k]).join(", ")||"없음"]]}
+function showTeacher(){const rows=teacherRows();showModal(`<h2>교사용 결과표</h2><table class="teacher-table"><thead><tr><th>평가 요소</th><th>결과</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table><div class="actions"><button class="secondary" onclick="copyTeacher()">결과 복사</button><button class="primary" onclick="downloadCSV()">CSV 저장</button><button class="secondary" onclick="hideModal()">닫기</button></div>`)}
+window.copyTeacher=async()=>{const text="평가 요소\t결과\n"+teacherRows().map(r=>r.join("\t")).join("\n");try{await navigator.clipboard.writeText(text);alert("결과표를 복사했습니다.")}catch{alert("브라우저가 자동 복사를 허용하지 않습니다. CSV 저장을 이용해 주세요.")}}
+window.downloadCSV=()=>{const rows=[["학생 이름",S.name],["최종 점수",S.score],["정답률",`${S.final.accuracy}%`],...teacherRows()];const csv="\uFEFF"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"),a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`좌표오목_${S.name}_결과.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+function updatePlayerLabels(){$("#studentLabel").textContent=S.name;$("#studentRecordHead").textContent=S.name;$("#studentStone").className=`stone-dot stone-${S.studentColor}`;$("#aiStone").className=`stone-dot stone-${S.aiColor}`;$("#studentOrder").textContent=`${S.firstPlayer==="student"?"선공":"후공"} · ${colorKorean(S.studentColor)} 돌`;$("#aiOrder").textContent=`${S.firstPlayer==="ai"?"선공":"후공"} · ${colorKorean(S.aiColor)} 돌`}
+function updateUI(){$("#qNow").textContent=S.questionNo;$("#qTotal").textContent=S.totalQuestions;$("#firstCorrect").textContent=S.firstCorrect;$("#retryCorrect").textContent=S.retryCorrect;$("#wrongCount").textContent=S.wrong;$("#score").textContent=S.score;$("#quizTime").textContent=S.phase==="mission"?`${S.quizTime}초`:"-";$("#wins").textContent=`${S.studentWins} : ${S.aiWins}`;const turn=S.phase==="studentMove"?S.name:S.phase==="aiThinking"?AI_NAME:S.phase==="mission"?"형성평가":"준비";$("#turnText").textContent=turn;$("#taskCard").className=`card task-card ${S.phase==="studentMove"?"turn-student":S.phase==="mission"?"turn-mission":"turn-ai"}`;updateMoveTimeUI();renderRecords();renderSkills()}
+function showModal(html){$("#modal").innerHTML=html;$("#modalOverlay").classList.remove("hidden")}window.hideModal=()=>$("#modalOverlay").classList.add("hidden")
+
+
+
+// ===== 웹 4자리 코드 친구 대전 =====
+const F={
+  room:"",playerId:"",name:"",role:"",players:[],difficulty:"standard",min:-5,max:5,
+  board:new Map(),turnId:null,myColor:null,started:false,gameOver:false,pollTimer:null,
+  phase:"waiting",mainTime:180,moveLeft:180,inByo:false,byoLeft:60,byoRemaining:3,moveClock:null,
+  pendingRead:null,readAttempt:0,readTime:15,readClock:null,score:0,firstCorrect:0,retryCorrect:0,wrong:0,
+  records:[],noticeTimer:null,lastMove:null
+};
+function setGameMode(mode){
+  $("#gameMode").value=mode;$("#aiModeBtn").classList.toggle("active",mode==="ai");$("#friendModeBtn").classList.toggle("active",mode==="friend");
+  $("#friendRoomPanel").classList.toggle("hidden",mode!=="friend");
+  $("#startBtn").textContent=mode==="friend"?($("#roomAction").value==="join"?"4자리 코드로 참가하기":"친구 대결방 만들기"):"좌표 오목 시작하기";
 }
-function showTeacher(){
-  const rows=teacherTable();
-  showModal(`<h2>교사용 결과표</h2><table><thead><tr><th>평가 요소</th><th>결과</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</tbody></table>
-  <div class="actions" style="margin-top:14px"><button class="secondary" onclick="copyTeacher()">결과 복사</button><button class="primary" onclick="downloadCSV()">CSV 저장</button><button class="secondary" onclick="hideModal()">닫기</button></div>`)
+$("#aiModeBtn").addEventListener("click",()=>setGameMode("ai"));
+$("#friendModeBtn").addEventListener("click",()=>setGameMode("friend"));
+$("#roomAction").addEventListener("change",()=>setGameMode("friend"));
+$("#roomCodeInput").addEventListener("input",e=>e.target.value=e.target.value.replace(/\D/g,"").slice(0,4));
+
+async function friendApi(path,data={}){
+  const res=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+  const payload=await res.json().catch(()=>({}));if(!res.ok)throw new Error(payload.error||"대결 서버에 연결할 수 없습니다.");return payload;
 }
-window.copyTeacher=async function(){const t=teacherTable().map(r=>r.join("\t")).join("\n");await navigator.clipboard.writeText("평가 요소\t결과\n"+t);alert("결과표를 복사했습니다.")}
-window.downloadCSV=function(){
-  const rows=[["학생 이름",state.name],["난이도",$("#difficulty option:checked").textContent],["최종 점수",state.score],...teacherTable()];
-  const csv="\uFEFF"+rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=`좌표오목_${state.name||"학생"}_결과.csv`;a.click();URL.revokeObjectURL(a.href)
+async function startFriendMode(){
+  F.name=$("#studentName").value.trim()||"학생";F.difficulty=$("#difficulty").value;[F.min,F.max]=rangeSettings(F.difficulty);
+  const action=$("#roomAction").value,code=$("#roomCodeInput").value.trim();
+  if(!/^\d{4}$/.test(code)){alert("사용할 4자리 숫자 방 코드를 입력하세요.");return}
+  const payload={name:F.name,difficulty:F.difficulty,code};
+  try{
+    const data=await friendApi(action==="create"?"/api/create":"/api/join",payload);
+    F.room=data.code;F.playerId=data.playerId;F.role=data.role;F.players=data.players||[];F.difficulty=data.difficulty||F.difficulty;[F.min,F.max]=rangeSettings(F.difficulty);
+    $("#startScreen").classList.add("hidden");$("#friendScreen").classList.remove("hidden");$("#friendRoomCode").textContent=F.room;
+    friendLog(`방 코드 ${F.room}에 연결했습니다.`);drawFriendBoard();renderFriendPlayers();updateFriendUI();startFriendPolling();
+  }catch(e){alert(e.message+"\n\n친구 대전은 index.html을 서버에서 실행해야 합니다. 함께 제공된 server.js를 실행하거나 웹 서버에 배포하세요.")}
 }
-function showModal(html){$("#modal").innerHTML=html;$("#modalOverlay").classList.remove("hidden")}
-window.hideModal=function(){$("#modalOverlay").classList.add("hidden")}
-$("#startBtn").addEventListener("click",()=>{
-  state.name=$("#studentName").value.trim()||"학생";state.difficulty=$("#difficulty").value;
-  const s=settings();state.min=s.min;state.max=s.max;state.size=s.max-s.min+1;
-  $("#startScreen").classList.add("hidden");$("#gameScreen").classList.remove("hidden");
-  clearBoard();updateUI();msg("주사위로 선공과 돌 색을 정합니다.");startDiceSetup()
-});
-$("#xInput").addEventListener("input",updatePreview);$("#yInput").addEventListener("input",updatePreview);
-$("#submitBtn").addEventListener("click",()=>state.phase==="student"?studentMove():state.phase==="read"?readMove():null);
-$("#teacherBtn").addEventListener("click",showTeacher);
-$("#restartBtn").addEventListener("click",()=>location.reload());
-drawBoard();
+function startFriendPolling(){
+  clearInterval(F.pollTimer);F.pollTimer=setInterval(async()=>{try{const d=await friendApi("/api/poll",{code:F.room,playerId:F.playerId});$("#friendConnDot").className="connection-dot ok";$("#friendConnection").textContent="연결됨";(d.events||[]).forEach(handleFriendEvent)}catch(e){$("#friendConnDot").className="connection-dot bad";$("#friendConnection").textContent="연결 재시도 중"}},550)
+}
+function handleFriendEvent(ev){
+  if(ev.type==="players"){F.players=ev.players;renderFriendPlayers();friendLog(`${ev.players.map(p=>p.name).join(" · ")} 연결`)}
+  if(ev.type==="dice"){
+    F.players=ev.players||F.players;renderFriendPlayers();showFriendNotice(`주사위 결과\n${ev.names[0]} ${ev.rolls[0]} : ${ev.rolls[1]} ${ev.names[1]}`,2200);friendLog(`주사위: ${ev.names[0]} ${ev.rolls[0]} : ${ev.rolls[1]} ${ev.names[1]}`);
+    if(ev.winnerId===F.playerId)setTimeout(()=>showFriendChoice(ev),900);else renderFriendWaiting(`${ev.winnerName}님이 선공과 돌 색을 선택하고 있습니다.`)
+  }
+  if(ev.type==="gameStart"){
+    F.started=true;F.gameOver=false;F.turnId=ev.turnId;F.players=ev.players;F.myColor=ev.colors[F.playerId];F.board=new Map();F.records=[];F.pendingRead=null;F.phase="waiting";
+    F.mainTime=180;F.moveLeft=180;F.inByo=false;F.byoLeft=60;F.byoRemaining=3;renderFriendPlayers();drawFriendBoard();friendLog(`${ev.firstName}님이 먼저 시작합니다.`);beginFriendTurn()
+  }
+  if(ev.type==="move"){
+    F.board.set(key(ev.x,ev.y),ev.playerId);F.turnId=ev.nextTurnId;F.lastMove={x:ev.x,y:ev.y,playerId:ev.playerId};
+    const rec={turn:F.records.length+1,playerId:ev.playerId,playerName:ev.playerName,x:ev.x,y:ev.y,revealed:ev.playerId===F.playerId};F.records.push(rec);renderFriendRecords();drawFriendBoard();friendLog(`${ev.playerName}님이 돌을 놓았습니다.`);
+    stopFriendMoveClock();
+    if(ev.gameOver){F.phase="waiting";updateFriendUI();return}
+    if(ev.playerId!==F.playerId){F.pendingRead={x:ev.x,y:ev.y,playerName:ev.playerName,record:rec};F.readAttempt=0;F.phase="read";renderFriendReadMission();startFriendReadClock();drawFriendBoard()}
+    else{F.phase="waiting";renderFriendWaiting("친구가 좌표를 읽고 착수하기를 기다리고 있습니다.");updateFriendUI()}
+  }
+  if(ev.type==="gameOver"){
+    F.gameOver=true;F.started=false;F.phase="over";stopFriendMoveClock();stopFriendReadClock();const t=ev.reason==="timeout"?`${ev.loserName}님이 시간패했습니다. ${ev.winnerName}님 승리!`:`${ev.winnerName}님이 오목을 완성했습니다.`;friendLog(t);showFriendNotice(t,0);renderFriendGameOver(t)
+  }
+  if(ev.type==="peerLeft"){F.started=false;F.phase="waiting";stopFriendMoveClock();stopFriendReadClock();renderFriendWaiting("친구의 연결이 종료되었습니다. 새 방을 만들어 다시 연결하세요.","bad")}
+}
+function showFriendChoice(){
+  showModal(`<h2>주사위 승리!</h2><p>${escapeHTML(F.name)}님이 선공과 돌 색을 결정합니다.</p><div class="form-grid"><div class="field"><label>먼저 시작할 사람</label><select id="friendFirstChoice">${F.players.map(p=>`<option value="${p.id}">${escapeHTML(p.name)}</option>`).join("")}</select></div><div class="field"><label>내 돌 색</label><select id="friendColorChoice"><option value="black">검은색</option><option value="white">흰색</option></select></div></div><button class="primary" style="margin-top:13px" onclick="sendFriendChoice()">선택 완료</button>`)
+}
+window.sendFriendChoice=async()=>{try{await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"choice",firstId:$("#friendFirstChoice").value,winnerColor:$("#friendColorChoice").value}});hideModal()}catch(e){alert(e.message)}};
+function renderFriendPlayers(){$("#friendPlayers").innerHTML=F.players.map(p=>`<div class="friend-player ${p.id===F.playerId?"me":""}"><b>${escapeHTML(p.name)}${p.id===F.playerId?" (나)":""}</b><span>${p.color?(p.color==="black"?"⚫ 검은 돌":"⚪ 흰 돌"):"대기"}</span></div>`).join("")}
+function friendPlayer(pid){return F.players.find(p=>p.id===pid)}
+function friendColor(pid){return friendPlayer(pid)?.color||"black"}
+function friendXP(v){return 64+(v-F.min)*(632/(F.max-F.min))}function friendYP(v){return 64+(F.max-v)*(632/(F.max-F.min))}
+function drawFriendBoard(){
+  const b=$("#friendBoard"),left=64,right=696,top=64,bottom=696,step=632/(F.max-F.min);b.innerHTML="";b.appendChild(svgEl("rect",{x:0,y:0,width:760,height:760,fill:"#fff"}));
+  for(let v=F.min;v<=F.max;v++){const x=friendXP(v),y=friendYP(v),axis=v===0;b.appendChild(svgEl("line",{x1:x,y1:top,x2:x,y2:bottom,stroke:axis?"#111827":"#dce2ea","stroke-width":axis?3:1}));b.appendChild(svgEl("line",{x1:left,y1:y,x2:right,y2:y,stroke:axis?"#111827":"#dce2ea","stroke-width":axis?3:1}));const show=F.difficulty!=="challenge"||v===0||v%2===0;if(v!==0&&show){b.appendChild(svgEl("text",{x,y:friendYP(0)+23,"text-anchor":"middle","font-size":13},String(v)));b.appendChild(svgEl("text",{x:friendXP(0)-12,y:y+5,"text-anchor":"end","font-size":13},String(v)))}}
+  b.appendChild(svgEl("path",{d:`M ${right+14} ${friendYP(0)} l -15 -8 v 16 z`,fill:"#111827"}));b.appendChild(svgEl("path",{d:`M ${friendXP(0)} ${top-14} l -8 15 h 16 z`,fill:"#111827"}));b.appendChild(svgEl("text",{x:right+20,y:friendYP(0)+25,"font-style":"italic","font-family":"Times New Roman","font-size":22},"x"));b.appendChild(svgEl("text",{x:friendXP(0)-25,y:top-18,"font-style":"italic","font-family":"Times New Roman","font-size":22},"y"));b.appendChild(svgEl("circle",{cx:friendXP(0),cy:friendYP(0),r:5,fill:"#2563eb"}));b.appendChild(svgEl("text",{x:friendXP(0)-11,y:friendYP(0)+20,"text-anchor":"end","font-family":"Times New Roman","font-size":17},"O"));
+  if(F.pendingRead&&(F.readAttempt>0)){const p=F.pendingRead;b.appendChild(svgEl("line",{x1:friendXP(p.x),y1:friendYP(p.y),x2:friendXP(p.x),y2:friendYP(0),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}));b.appendChild(svgEl("line",{x1:friendXP(p.x),y1:friendYP(p.y),x2:friendXP(0),y2:friendYP(p.y),stroke:"#f97316","stroke-width":2,"stroke-dasharray":"7 6"}))}
+  for(const [k,pid] of F.board){const [x,y]=k.split(",").map(Number),color=friendColor(pid),isNew=F.pendingRead&&pid!==F.playerId&&x===F.pendingRead.x&&y===F.pendingRead.y;b.appendChild(svgEl("circle",{cx:friendXP(x),cy:friendYP(y),r:Math.max(11,step*.34),fill:color==="white"?"#fff":"#111",stroke:color==="white"?"#475569":"#111","stroke-width":color==="white"?3:1.5,class:`stone${isNew?" flash":""}`}))}
+}
+function showFriendNotice(text,duration=1800){clearTimeout(F.noticeTimer);$("#friendBoardNotice").textContent=text;$("#friendBoardOverlay").classList.remove("hidden");if(duration>0)F.noticeTimer=setTimeout(()=>$("#friendBoardOverlay").classList.add("hidden"),duration)}
+function hideFriendNotice(){clearTimeout(F.noticeTimer);$("#friendBoardOverlay").classList.add("hidden")}
+function friendLog(text){const e=$("#friendLog");e.insertAdjacentHTML("beforeend",`<p>• ${escapeHTML(text)}</p>`);e.scrollTop=e.scrollHeight}
+function renderFriendRecords(){$("#friendRecordBody").innerHTML=F.records.map(r=>`<tr><td>${r.turn}</td><td>${escapeHTML(r.playerName)}${r.playerId===F.playerId?" (나)":""}</td><td>${r.revealed?`(${r.x}, ${r.y})`:"?"}</td></tr>`).join("")}
+function friendTaskStatus(text,type=""){const e=$("#friendTaskStatus");if(e){e.className=`status ${type}`;e.textContent=text}}
+function renderFriendWaiting(text="친구의 착수를 기다리고 있습니다.",type="help"){F.phase="waiting";$("#friendTaskCard").className="card friend-task turn-ai";$("#friendTaskArea").innerHTML=`<h2>${escapeHTML(text)}</h2><div class="status ${type}">${F.players.length<2?"방 코드를 친구에게 알려주세요.":"좌표평면을 살펴보며 다음 차례를 준비하세요."}</div>`;updateFriendUI()}
+function beginFriendTurn(){
+  if(!F.started||F.gameOver)return;if(F.turnId===F.playerId){if(F.pendingRead){F.phase="read";renderFriendReadMission();startFriendReadClock()}else renderFriendMove()}else renderFriendWaiting(`${friendPlayer(F.turnId)?.name||"친구"}님의 차례입니다.`)
+}
+function renderFriendMove(){
+  F.phase="move";$("#friendTaskCard").className="card friend-task turn-student";$("#friendTaskArea").innerHTML=`<h2>${escapeHTML(F.name)}님, ${F.myColor==="black"?"검은":"흰"} 돌을 놓을 위치를 순서쌍으로 나타내세요.</h2><div class="coord-inputs"><div class="field"><label for="friendMoveX">x좌표</label><input id="friendMoveX" inputmode="numeric" autocomplete="off"></div><div class="field"><label for="friendMoveY">y좌표</label><input id="friendMoveY" inputmode="numeric" autocomplete="off"></div></div><div id="friendMovePreview" class="preview">선택한 위치: ( , )</div><button id="friendMoveSubmit" class="primary">이 좌표에 돌 놓기</button><div id="friendTaskStatus" class="status">오목판을 클릭하지 말고 두 좌표를 입력하세요.</div>`;
+  const u=()=>$("#friendMovePreview").textContent=`선택한 위치: (${$("#friendMoveX").value.trim()||" "}, ${$("#friendMoveY").value.trim()||" "})`;$("#friendMoveX").addEventListener("input",u);$("#friendMoveY").addEventListener("input",u);$("#friendMoveSubmit").addEventListener("click",submitFriendMove);startFriendMoveClock();updateFriendUI();setTimeout(()=>$("#friendMoveX")?.focus(),0)
+}
+async function submitFriendMove(){
+  const xs=$("#friendMoveX").value.trim(),ys=$("#friendMoveY").value.trim();if(!xs||!ys)return friendTaskStatus("x좌표와 y좌표를 모두 입력하세요. 순서쌍은 두 수로 나타냅니다.","bad");const x=Number(xs),y=Number(ys);if(!Number.isInteger(x)||!Number.isInteger(y))return friendTaskStatus("좌표평면의 눈금에 해당하는 정수를 입력하세요.","bad");if(x<F.min||x>F.max||y<F.min||y>F.max)return friendTaskStatus("현재 좌표평면의 범위를 확인하세요.","bad");if(F.board.has(key(x,y)))return friendTaskStatus("이 좌표에는 이미 돌이 있습니다. 다른 좌표를 선택하세요.","bad");
+  try{stopFriendMoveClock();await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"move",x,y}});friendTaskStatus(`(${x}, ${y})를 사용하여 위치를 정확하게 전달했습니다.`,"ok")}catch(e){friendTaskStatus(e.message,"bad");startFriendMoveClock()}
+}
+function renderFriendReadMission(){
+  const p=F.pendingRead;if(!p)return beginFriendTurn();$("#friendTaskCard").className="card friend-task turn-mission";$("#friendTaskArea").innerHTML=`<div class="problem-number">친구 돌 좌표 읽기</div><h2>${escapeHTML(p.playerName)}님이 방금 놓은 돌의 위치를 순서쌍으로 나타내세요.</h2><div class="coord-inputs"><div class="field"><label for="friendReadX">x좌표</label><input id="friendReadX" inputmode="numeric" autocomplete="off"></div><div class="field"><label for="friendReadY">y좌표</label><input id="friendReadY" inputmode="numeric" autocomplete="off"></div></div><div id="friendReadPreview" class="preview">내가 읽은 좌표: ( , )</div><button id="friendReadSubmit" class="primary">좌표 확인하기</button><div id="friendTaskStatus" class="status ${F.readAttempt?"help":""}">${F.readAttempt?"주황색 점선을 따라 x좌표와 y좌표를 다시 확인하세요.":"정답을 확인하기 전에는 친구의 좌표가 기록판에 공개되지 않습니다."}</div>`;
+  const u=()=>$("#friendReadPreview").textContent=`내가 읽은 좌표: (${$("#friendReadX").value.trim()||" "}, ${$("#friendReadY").value.trim()||" "})`;$("#friendReadX").addEventListener("input",u);$("#friendReadY").addEventListener("input",u);$("#friendReadSubmit").addEventListener("click",submitFriendRead);drawFriendBoard();updateFriendUI();setTimeout(()=>$("#friendReadX")?.focus(),0)
+}
+function friendReadFeedback(x,y,p){if(x===p.y&&y===p.x)return"x좌표와 y좌표의 순서를 다시 확인하세요. 순서쌍에서는 x좌표를 먼저 씁니다.";if((Math.abs(x)===Math.abs(p.x)&&x!==p.x)||(Math.abs(y)===Math.abs(p.y)&&y!==p.y))return"숫자뿐 아니라 양수와 음수의 방향도 확인하세요.";if(x===p.x)return"x좌표는 정확합니다. 위쪽과 아래쪽을 확인하세요.";if(y===p.y)return"y좌표는 정확합니다. 왼쪽과 오른쪽을 확인하세요.";return"먼저 x축에서 가로 위치를 읽고, 다음 y축에서 세로 위치를 읽으세요."}
+function submitFriendRead(){
+  const xs=$("#friendReadX").value.trim(),ys=$("#friendReadY").value.trim();if(!xs||!ys)return friendTaskStatus("x좌표와 y좌표를 모두 입력하세요.","bad");const x=Number(xs),y=Number(ys);if(!Number.isInteger(x)||!Number.isInteger(y))return friendTaskStatus("정수 좌표를 입력하세요.","bad");const p=F.pendingRead;
+  if(x===p.x&&y===p.y){stopFriendReadClock();const bonus=Math.max(0,Math.min(20,Math.floor(F.readTime/15*20)));if(F.readAttempt===0){F.firstCorrect++;F.score+=100+bonus}else{F.retryCorrect++;F.score+=70+bonus}p.record.revealed=true;renderFriendRecords();friendTaskStatus(`정답입니다. 친구 돌의 좌표는 (${p.x}, ${p.y})입니다.`,"ok");F.pendingRead=null;drawFriendBoard();updateFriendUI();setTimeout(renderFriendMove,1000)}
+  else if(F.readAttempt===0){F.readAttempt=1;stopFriendReadClock();friendTaskStatus(friendReadFeedback(x,y,p)+" 한 번 더 생각해 보세요.","help");drawFriendBoard();startFriendReadClock()}
+  else{stopFriendReadClock();F.wrong++;p.record.revealed=true;renderFriendRecords();friendTaskStatus(`친구 돌의 좌표는 (${p.x}, ${p.y})입니다. 다음 문제에서 다시 도전하세요.`,"bad");F.pendingRead=null;drawFriendBoard();updateFriendUI();setTimeout(renderFriendMove,1300)}
+}
+function startFriendReadClock(){stopFriendReadClock();F.readTime=15;updateFriendUI();F.readClock=setInterval(()=>{F.readTime--;updateFriendUI();if(F.readTime<=0){stopFriendReadClock();const p=F.pendingRead;if(!p)return;if(F.readAttempt===0){F.readAttempt=1;friendTaskStatus("시간이 끝났습니다. 점선 힌트를 보고 다시 입력하세요.","help");drawFriendBoard();startFriendReadClock()}else{F.wrong++;p.record.revealed=true;renderFriendRecords();friendTaskStatus(`시간이 끝났습니다. 정답은 (${p.x}, ${p.y})입니다.`,"bad");F.pendingRead=null;drawFriendBoard();updateFriendUI();setTimeout(renderFriendMove,1300)}}},1000)}
+function stopFriendReadClock(){clearInterval(F.readClock);F.readClock=null}
+function startFriendMoveClock(){stopFriendMoveClock();updateFriendUI();F.moveClock=setInterval(()=>{if(F.phase!=="move")return;if(F.inByo){F.byoLeft--;if(F.byoLeft<=0){F.byoRemaining--;if(F.byoRemaining<=0){stopFriendMoveClock();friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"timeoutLoss"}}).catch(()=>{});return}F.byoLeft=60;showFriendNotice(`초읽기 1회 사용\n남은 기회 ${F.byoRemaining}회`,1400)}}else{F.moveLeft--;if(F.moveLeft<=0){F.inByo=true;F.byoLeft=60;showFriendNotice("기본시간 종료\n60초 초읽기를 시작합니다.",1500)}}updateFriendUI()},1000)}
+function stopFriendMoveClock(){clearInterval(F.moveClock);F.moveClock=null}
+function updateFriendUI(){
+  const turn=friendPlayer(F.turnId);$("#friendTurn").textContent=turn?turn.name:"대기 중";$("#friendMyColor").textContent=F.myColor?(F.myColor==="black"?"검은색 돌":"흰색 돌"):"미정";$("#friendCorrect").textContent=F.firstCorrect+F.retryCorrect;$("#friendScore").textContent=F.score;$("#friendQuizTime").textContent=F.phase==="read"?`${F.readTime}초`:"-";const t=F.inByo?F.byoLeft:F.moveLeft;$("#friendMoveTime").textContent=`${F.inByo?"초읽기":"기본"} ${fmt(t)}`;$("#friendByo").textContent=`${F.byoRemaining}회`;$("#friendMatchState").textContent=F.gameOver?"종료":F.started?(F.phase==="read"?"좌표 읽기":F.phase==="move"?"내 착수":"상대 차례"):F.players.length<2?"친구 대기":"시작 준비";renderFriendRecords()
+}
+function renderFriendGameOver(text){$("#friendTaskCard").className="card friend-task turn-mission";$("#friendTaskArea").innerHTML=`<h2>대결 종료</h2><div class="status ok">${escapeHTML(text)}</div><div class="guide"><b>좌표 읽기 결과</b><br>첫 시도 정답 ${F.firstCorrect}개 · 재도전 정답 ${F.retryCorrect}개 · 오답 ${F.wrong}개 · 점수 ${F.score}점</div><div class="actions"><button class="primary" onclick="location.reload()">새 대결 시작</button></div>`;updateFriendUI()}
+$("#friendExitBtn").addEventListener("click",async()=>{try{if(F.room&&F.playerId)await friendApi("/api/send",{code:F.room,playerId:F.playerId,event:{type:"leave"}})}catch{}location.reload()});
+window.addEventListener("beforeunload",()=>{if(F.room&&F.playerId)navigator.sendBeacon?.("/api/leave-beacon",new Blob([JSON.stringify({code:F.room,playerId:F.playerId})],{type:"application/json"}))});
+
+
+$("#startBtn").addEventListener("click",()=>{if($("#gameMode").value==="friend"){startFriendMode();return}S.name=$("#studentName").value.trim()||"학생";S.difficulty=$("#difficulty").value;[S.min,S.max]=rangeSettings(S.difficulty);S.board=new Map();$("#startScreen").classList.add("hidden");$("#gameScreen").classList.remove("hidden");updatePlayerLabels();drawBoard();updateUI();showDiceSetup()});
+$("#teacherBtn").addEventListener("click",showTeacher);$("#restartBtn").addEventListener("click",()=>location.reload());
+drawBoard();renderSkills();
 </script>
 </body>
 </html>
